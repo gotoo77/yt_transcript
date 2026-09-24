@@ -12,6 +12,10 @@ from .database import (
     get_analysis_by_id,
     get_analysis_stats,
     get_recent_analyses,
+    save_transcript,
+    list_transcripts,
+    find_transcript,
+    delete_transcript,
     save_analysis,
     search_analyses,
 )
@@ -97,11 +101,51 @@ def transcribe() -> ResponseReturnValue:
         if transcript_data is None:
             return jsonify(success=False, error="Aucune transcription disponible"), 404
         text = " ".join(entry.text for entry in transcript_data)
+        text = text.replace("aujourd hui", "aujourd'hui")
+        if not save_transcript(video_id, text):
+            return jsonify(success=False, error="Sauvegarde de la transcription impossible"), 500
         session["video_id"] = video_id
-        return jsonify(success=True, transcript=text.replace("aujourd hui", "aujourd'hui"))
+        return jsonify(success=True, transcript=text)
     except Exception:
         logger.exception("Échec de récupération de la transcription")
         return jsonify(success=False, error="Impossible de récupérer la transcription YouTube"), 502
+
+
+@bp.get("/transcripts")
+def transcript_history() -> ResponseReturnValue:
+    rows = list_transcripts()
+    return jsonify(success=True, transcripts=[
+        {"video_id": row.video_id, "created_at": row.created_at.isoformat(),
+         "characters": len(row.text), "preview": row.text[:160]}
+        for row in rows
+    ])
+
+
+@bp.get("/transcripts/<video_id>")
+def transcript_detail(video_id: str) -> ResponseReturnValue:
+    try:
+        video_id = extract_video_id(video_id)
+    except ValueError:
+        abort(400, "Identifiant vidéo invalide")
+    row = find_transcript(video_id)
+    if row is None:
+        abort(404, "Transcription introuvable")
+    session["video_id"] = video_id
+    return jsonify(success=True, video_id=row.video_id, transcript=row.text,
+                   created_at=row.created_at.isoformat())
+
+
+@bp.delete("/transcripts/<video_id>")
+def transcript_remove(video_id: str) -> ResponseReturnValue:
+    try:
+        video_id = extract_video_id(video_id)
+    except ValueError:
+        abort(400, "Identifiant vidéo invalide")
+    if not delete_transcript(video_id):
+        abort(404, "Transcription introuvable")
+    if session.get("video_id") == video_id:
+        session.pop("video_id", None)
+    return jsonify(success=True)
 
 
 @bp.route("/analyze", methods=["POST"])
