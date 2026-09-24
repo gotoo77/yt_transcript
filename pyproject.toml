@@ -43,7 +43,7 @@ dev = [
 packages = ["src/yt_transcript"]
 
 [tool.hatch.build.targets.sdist]
-include = ["src", "tests", "scripts", "pyproject.toml", "uv.lock", "README.md", "README_LAUNCH.md", "app.py", "launch.sh", "launch.ps1", ".devmenu.json"]
+include = ["src", "tests", "scripts", "pyproject.toml", "uv.lock", "README.md", "docs", "app.py", "launch.sh", "launch.ps1", ".devmenu.json"]
 
 [tool.ruff]
 target-version = "py311"

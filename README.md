@@ -17,7 +17,7 @@ Ouvrir http://127.0.0.1:5001. Le serveur utilise
 [Waitress](https://flask.palletsprojects.com/en/stable/deploying/waitress/).
 `uv run yt-transcript dev` active le rechargement et le debug de développement.
 
-[Administration, configuration, ancienne base et DevMenu](README_LAUNCH.md).
+[Administration, configuration, ancienne base et DevMenu](docs/launch.md).
 
 ## Qualité et tests
 
@@ -57,4 +57,4 @@ uv.lock               dépendances résolues
 La récupération des transcriptions nécessite YouTube et dépend de leur disponibilité.
 Les analyses et TU fonctionnent hors réseau, sans téléchargement de corpus.
 Le sentiment TextBlob est principalement adapté à l'anglais ; lisibilité et résumés
-restent heuristiques. Les documents `PHASE*.md` décrivent l'historique du projet.
+restent heuristiques. Les documents historiques sont conservés dans [`docs/history/`](docs/history/).

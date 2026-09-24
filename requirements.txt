@@ -1,2 +1,0 @@
-# Compatibility for pip; pyproject.toml is the source of truth.
-.
