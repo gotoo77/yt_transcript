@@ -1,6 +1,7 @@
 import json
 import os
 import socket
+import time
 from urllib.request import urlopen
 
 import psutil
@@ -54,6 +55,19 @@ def test_real_server_lifecycle_and_occupied_port(tmp_path):
             start(tmp_path / "other", "127.0.0.1", port)
         assert managed_process(tmp_path).pid == process_id
         assert stop(tmp_path) is True
+        # Windows may briefly retain the listener after the child exits.
+        # Wait for the actual port to close; do not retry start against a live listener.
+        deadline = time.monotonic() + 5
+        while True:
+            try:
+                connection = socket.create_connection(("127.0.0.1", port), timeout=0.2)
+            except OSError:
+                break
+            else:
+                connection.close()
+            if time.monotonic() >= deadline:
+                pytest.fail("Server listener still accepts connections after stop()")
+            time.sleep(0.05)
         process_id = start(tmp_path, "127.0.0.1", port)
         with urlopen(f"http://127.0.0.1:{port}/health", timeout=3) as response:
             assert response.status == 200
