@@ -86,7 +86,7 @@ def test_full_dashboard_pdf_contains_period_and_sections(fake_dashboard):
     reader = PdfReader(BytesIO(buffer.getvalue()))
     assert len(reader.pages) >= 1
     text = " ".join(page.extract_text() for page in reader.pages)
-    for fragment in ("14 derniers jours", "01/09/2026", "Indicateurs", "Tendances",
+    for fragment in ("14 derniers jours", "2026-09-01", "Indicateurs", "Tendances",
                      "Distributions", "Analyses Remarquables"):
         assert fragment in text
 
