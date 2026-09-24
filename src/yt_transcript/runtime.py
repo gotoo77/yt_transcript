@@ -74,7 +74,10 @@ def start(directory: Path, host: str, port: int) -> int:
                 stdout=log,
                 stderr=log,
                 env=environment,
-                creationflags=(subprocess.CREATE_NO_WINDOW | subprocess.CREATE_NEW_PROCESS_GROUP)
+                creationflags=(
+                    getattr(subprocess, "CREATE_NO_WINDOW", 0)
+                    | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+                )
                 if os.name == "nt"
                 else 0,
                 start_new_session=os.name != "nt",
