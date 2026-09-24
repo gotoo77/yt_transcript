@@ -58,8 +58,14 @@ def test_json_export_preserves_unicode_zero_values_and_metadata(monkeypatch):
 def test_csv_export_preserves_order_skips_missing_and_truncates_long_summary(monkeypatch):
     rows = {
         7: make_analysis(),
-        8: make_analysis(id=8, created_at=None, video_id=None, video_url=None,
-                         summary_text="x" * 105, sentiment_label=None),
+        8: make_analysis(
+            id=8,
+            created_at=None,
+            video_id=None,
+            video_url=None,
+            summary_text="x" * 105,
+            sentiment_label=None,
+        ),
     }
     monkeypatch.setattr(
         "yt_transcript.export_service.get_analysis_by_id", lambda analysis_id: rows.get(analysis_id)
@@ -82,17 +88,22 @@ def test_empty_csv_is_header_only(monkeypatch):
     assert len(list(csv.reader(StringIO(payload)))) == 1
 
 
-@pytest.mark.parametrize("method,lookup", [
-    ("export_analysis_json", "get_analysis_by_id"),
-    ("export_analysis_csv", "get_analysis_by_id"),
-    ("create_dashboard_data", "get_recent_analyses"),
-])
+@pytest.mark.parametrize(
+    "method,lookup",
+    [
+        ("export_analysis_json", "get_analysis_by_id"),
+        ("export_analysis_csv", "get_analysis_by_id"),
+        ("create_dashboard_data", "get_recent_analyses"),
+    ],
+)
 def test_export_backends_fail_without_leaking_exception(monkeypatch, method, lookup):
     def fail(*args, **kwargs):
         raise RuntimeError("private-storage-path")
 
     monkeypatch.setattr("yt_transcript.export_service." + lookup, fail)
-    argument = [7] if method == "export_analysis_csv" else 7 if method == "export_analysis_json" else 5
+    argument = (
+        [7] if method == "export_analysis_csv" else 7 if method == "export_analysis_json" else 5
+    )
     assert getattr(ExportService(), method)(argument) is None
 
 
@@ -106,12 +117,23 @@ def test_dashboard_projection_empty_and_populated(monkeypatch):
     assert empty["top_metrics"]["most_complex"] is None
 
     analyses = [
-        make_analysis(id=1, total_words=5, complexity_score=4.0,
-                      vocabulary_richness=10.0, sentiment_label="neutral",
-                      sentiment_polarity=0.0),
-        make_analysis(id=2, total_words=10, complexity_score=8.0,
-                      vocabulary_richness=90.0, sentiment_label="positive",
-                      sentiment_polarity=None, created_at=None),
+        make_analysis(
+            id=1,
+            total_words=5,
+            complexity_score=4.0,
+            vocabulary_richness=10.0,
+            sentiment_label="neutral",
+            sentiment_polarity=0.0,
+        ),
+        make_analysis(
+            id=2,
+            total_words=10,
+            complexity_score=8.0,
+            vocabulary_richness=90.0,
+            sentiment_label="positive",
+            sentiment_polarity=None,
+            created_at=None,
+        ),
     ]
     monkeypatch.setattr("yt_transcript.export_service.get_recent_analyses", lambda limit: analyses)
     result = service.create_dashboard_data(limit=2)
