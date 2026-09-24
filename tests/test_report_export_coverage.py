@@ -1,7 +1,5 @@
 """Behavioral tests for dashboard report exports; no network or production database."""
 from io import BytesIO
-from types import SimpleNamespace
-
 import pytest
 from openpyxl import load_workbook
 from pypdf import PdfReader
@@ -67,7 +65,8 @@ def test_full_dashboard_excel_contains_real_values(fake_dashboard):
     buffer = service.generate_dashboard_report(days=14, format_type="EXCEL")
     assert buffer.getvalue().startswith(b"PK")
     assert fake_dashboard == [14]
-    with load_workbook(BytesIO(buffer.getvalue()), read_only=True) as workbook:
+    workbook = load_workbook(BytesIO(buffer.getvalue()), read_only=True)
+    try:
         assert workbook.sheetnames == ["KPIs", "Tendances", "Insights"]
         assert workbook["KPIs"]["B3"].value == 3
         assert workbook["KPIs"]["B4"].value == 1250
@@ -76,6 +75,8 @@ def test_full_dashboard_excel_contains_real_values(fake_dashboard):
         assert workbook["Tendances"]["B5"].value == 2
         assert workbook["Insights"]["B3"].value == 100
         assert workbook["Insights"]["B4"].value == 0.4
+    finally:
+        workbook.close()
 
 
 def test_full_dashboard_pdf_contains_period_and_sections(fake_dashboard):
@@ -119,9 +120,12 @@ def test_empty_sections_still_produce_valid_documents(monkeypatch, format_type, 
             page.extract_text() for page in PdfReader(BytesIO(payload)).pages
         )
     else:
-        with load_workbook(BytesIO(payload), read_only=True) as workbook:
+        workbook = load_workbook(BytesIO(payload), read_only=True)
+        try:
             assert workbook.sheetnames == ["KPIs", "Tendances", "Insights"]
             assert workbook["KPIs"]["B3"].value is None
+        finally:
+            workbook.close()
 
 
 def test_optional_report_sections_absent_are_not_invented(sample_dashboard):
