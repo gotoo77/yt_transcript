@@ -168,3 +168,12 @@ def test_text_tools_have_meaningful_results(client):
     response = client.post("/summary", json={"text": text, "num_sentences": 1})
     assert response.json["success"] is True
     assert response.json["summary_length"] < response.json["original_length"]
+
+
+def test_modern_ui_stylesheet_is_packaged(client):
+    page = client.get("/")
+    assert page.status_code == 200
+    assert b'href="/static/modern.css"' in page.data
+    stylesheet = client.get("/static/modern.css")
+    assert stylesheet.status_code == 200
+    assert b"prefers-reduced-motion" in stylesheet.data
