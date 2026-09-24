@@ -1,4 +1,5 @@
 """Behavioral tests for dashboard report exports; no network or production database."""
+
 from io import BytesIO
 
 import pytest
@@ -14,11 +15,14 @@ def sample_dashboard():
         "kpis": {
             "period": {"start_date": "2026-09-01", "end_date": "2026-09-24"},
             "totals": {
-                "analyses_period": 3, "analyses_ever": 7,
-                "words_analyzed": 1250, "reading_time_hours": 1.5,
+                "analyses_period": 3,
+                "analyses_ever": 7,
+                "words_analyzed": 1250,
+                "reading_time_hours": 1.5,
             },
             "averages": {
-                "complexity_score": 0.45, "sentiment_polarity": 0.2,
+                "complexity_score": 0.45,
+                "sentiment_polarity": 0.2,
                 "analyses_per_day": 1.25,
             },
             "distributions": {
@@ -26,10 +30,12 @@ def sample_dashboard():
                 "analysis_mode": {"style": 2, "concepts": 1},
             },
         },
-        "trends": {"daily_analyses": [
-            {"date": "2026-09-22", "count": 1},
-            {"date": "2026-09-23", "count": 2},
-        ]},
+        "trends": {
+            "daily_analyses": [
+                {"date": "2026-09-22", "count": 1},
+                {"date": "2026-09-23", "count": 2},
+            ]
+        },
         "insights": {
             "content_metrics": {
                 "avg_words_per_analysis": 100,
@@ -50,6 +56,7 @@ def sample_dashboard():
 @pytest.fixture
 def fake_dashboard(monkeypatch, sample_dashboard):
     calls = []
+
     def generate_comprehensive_dashboard(days):
         calls.append(days)
         return sample_dashboard
@@ -87,8 +94,14 @@ def test_full_dashboard_pdf_contains_period_and_sections(fake_dashboard):
     reader = PdfReader(BytesIO(buffer.getvalue()))
     assert len(reader.pages) >= 1
     text = " ".join(page.extract_text() for page in reader.pages)
-    for fragment in ("14 derniers jours", "2026-09-01", "Indicateurs", "Tendances",
-                     "Distributions", "Analyses Remarquables"):
+    for fragment in (
+        "14 derniers jours",
+        "2026-09-01",
+        "Indicateurs",
+        "Tendances",
+        "Distributions",
+        "Analyses Remarquables",
+    ):
         assert fragment in text
 
 
