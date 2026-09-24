@@ -114,11 +114,18 @@ def transcribe() -> ResponseReturnValue:
 @bp.get("/transcripts")
 def transcript_history() -> ResponseReturnValue:
     rows = list_transcripts()
-    return jsonify(success=True, transcripts=[
-        {"video_id": row.video_id, "created_at": row.created_at.isoformat(),
-         "characters": len(row.text), "preview": row.text[:160]}
-        for row in rows
-    ])
+    return jsonify(
+        success=True,
+        transcripts=[
+            {
+                "video_id": row.video_id,
+                "created_at": row.created_at.isoformat(),
+                "characters": len(row.text),
+                "preview": row.text[:160],
+            }
+            for row in rows
+        ],
+    )
 
 
 @bp.get("/transcripts/<video_id>")
@@ -131,8 +138,12 @@ def transcript_detail(video_id: str) -> ResponseReturnValue:
     if row is None:
         abort(404, "Transcription introuvable")
     session["video_id"] = video_id
-    return jsonify(success=True, video_id=row.video_id, transcript=row.text,
-                   created_at=row.created_at.isoformat())
+    return jsonify(
+        success=True,
+        video_id=row.video_id,
+        transcript=row.text,
+        created_at=row.created_at.isoformat(),
+    )
 
 
 @bp.delete("/transcripts/<video_id>")

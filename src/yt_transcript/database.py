@@ -71,9 +71,9 @@ class Analysis(Base):
         return f"<Analysis(id={self.id}, mode={self.analysis_mode}, created_at={self.created_at})>"
 
 
-
 class Transcript(Base):
     """Saved transcript, independent of analysis."""
+
     __tablename__ = "transcripts"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     video_id: Mapped[str] = mapped_column(String(11), unique=True, nullable=False, index=True)
@@ -102,7 +102,13 @@ def save_transcript(video_id: str, text: str) -> bool:
 def list_transcripts(limit: int = 50) -> list[Transcript]:
     db = get_db_session()
     try:
-        return list(db.scalars(select(Transcript).order_by(Transcript.created_at.desc(), Transcript.id.desc()).limit(limit)))
+        return list(
+            db.scalars(
+                select(Transcript)
+                .order_by(Transcript.created_at.desc(), Transcript.id.desc())
+                .limit(limit)
+            )
+        )
     finally:
         db.close()
 

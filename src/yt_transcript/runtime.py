@@ -61,7 +61,12 @@ def start(directory: Path, host: str, port: int) -> int:
             str(port),
         ]
         instance = uuid4().hex
-        environment = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUNBUFFERED="1", YT_TRANSCRIPT_INSTANCE_ID=instance)
+        environment = dict(
+            os.environ,
+            PYTHONIOENCODING="utf-8",
+            PYTHONUNBUFFERED="1",
+            YT_TRANSCRIPT_INSTANCE_ID=instance,
+        )
         with (directory / "server.log").open("ab") as log:
             child = subprocess.Popen(
                 command,
