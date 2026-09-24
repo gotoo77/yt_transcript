@@ -1,7 +1,5 @@
 """Focused PDF export regression tests using isolated SQLite and temporary paths."""
 
-from io import BytesIO
-from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -97,7 +95,7 @@ def test_sentiment_charts_are_valid_pngs_for_label_variants(label):
     )
     chart = PDFExportService().create_sentiment_chart(analysis)
     assert chart is not None
-    assert chart.getvalue().startswith(b"\\x89PNG")
+    assert chart.getvalue().startswith(b"\x89PNG")
 
 
 def test_pdf_without_optional_fields_uses_fallbacks(app, tmp_path, monkeypatch):
