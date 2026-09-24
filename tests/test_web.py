@@ -177,3 +177,19 @@ def test_modern_ui_stylesheet_is_packaged(client):
     stylesheet = client.get("/static/modern.css")
     assert stylesheet.status_code == 200
     assert b"prefers-reduced-motion" in stylesheet.data
+
+
+@pytest.mark.parametrize("url", ["/", "/dashboard"])
+def test_workspace_theme_and_accessible_navigation(client, url):
+    response = client.get(url)
+    assert response.status_code == 200
+    for expected in (b'data-bs-theme="dark"', b'id="theme-toggle"',
+                     b'href="#main-content"', b'id="main-content"',
+                     b'/static/modern.css', b'/static/theme.js'):
+        assert expected in response.data
+
+
+def test_theme_script_is_packaged(client):
+    response = client.get("/static/theme.js")
+    assert response.status_code == 200
+    assert b"yt-transcript-theme" in response.data
