@@ -180,6 +180,7 @@
     <a class="brand" href="/">▶ Transcript Studio</a>
     <nav class="workspace-nav" aria-label="Navigation principale">
       <a href="/" aria-current="page">Transcription et analyse</a>
+      <a href="#transcript-history">Transcriptions sauvegardées</a>
       <a href="/dashboard">Tableau de bord</a>
       <a href="/api/docs/" target="_blank" rel="noopener noreferrer">Documentation API <span class="visually-hidden">(nouvel onglet)</span></a>
     </nav>
@@ -416,6 +417,16 @@ Vous pouvez aussi coller manuellement du texte à analyser."></textarea>
             </div>
         </div>
 
+        <section id="transcript-history" class="card mb-4" aria-labelledby="transcript-history-title">
+            <div class="card-body">
+                <h2 id="transcript-history-title" class="h5">Transcriptions sauvegardées</h2>
+                <p class="text-muted">Les transcriptions récupérées sont sauvegardées localement, même sans analyse.</p>
+                <button id="transcript-history-refresh" type="button" class="btn btn-secondary mb-3">Actualiser la liste</button>
+                <p id="transcript-history-status" role="status" aria-live="polite"></p>
+                <ul id="transcript-history-list" class="list-group"></ul>
+            </div>
+        </section>
+
         <!-- Section Historique -->
         <div id="history-section" class="mb-4" style="display: none;">
             <div class="card">
@@ -453,5 +464,6 @@ Vous pouvez aussi coller manuellement du texte à analyser."></textarea>
 </div>
     <script src="/static/theme.js" defer></script>
     <script src="/static/app.js"></script>
+    <script src="/static/transcript-history.js" defer></script>
 </body>
 </html>
