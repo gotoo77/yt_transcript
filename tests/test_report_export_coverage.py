@@ -1,5 +1,6 @@
 """Behavioral tests for dashboard report exports; no network or production database."""
 from io import BytesIO
+
 import pytest
 from openpyxl import load_workbook
 from pypdf import PdfReader
