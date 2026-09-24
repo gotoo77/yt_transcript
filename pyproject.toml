@@ -1,0 +1,81 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "yt-transcript-analyzer"
+version = "1.0.0"
+description = "Analyse de transcriptions YouTube, historique et exports"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "flask>=3.1,<4",
+    "flask-restx>=1.3,<2",
+    "youtube-transcript-api>=1.2.2,<2",
+    "textblob>=0.19,<1",
+    "sqlalchemy>=2.0.36,<3",
+    "numpy>=2,<2.4",
+    "matplotlib>=3.9,<4",
+    "reportlab>=4.2,<5",
+    "openpyxl>=3.1.5,<4",
+    "waitress>=3.0.2,<4",
+    "platformdirs>=4,<5",
+    "psutil>=6,<8",
+    "filelock>=3.16,<4",
+]
+
+[project.scripts]
+yt-transcript = "yt_transcript.cli:main"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.12,<1",
+    "mypy>=1.15,<3",
+    "pytest>=8,<10",
+    "pytest-cov>=6,<8",
+    "types-openpyxl>=3.1",
+    "types-waitress>=3",
+    "types-psutil>=6",
+    "pypdf>=5,<7",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/yt_transcript"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "tests", "scripts", "pyproject.toml", "uv.lock", "README.md", "README_LAUNCH.md", "app.py", "launch.sh", "launch.ps1", ".devmenu.json"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+extend-exclude = ["*.md"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "UP"]
+
+[tool.mypy]
+python_version = "3.11"
+files = ["src/yt_transcript"]
+check_untyped_defs = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = ["flask_restx.*", "textblob.*", "reportlab.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers --strict-config"
+filterwarnings = ["error", "ignore:.*utcnow.*:DeprecationWarning"]
+
+[tool.coverage.run]
+source = ["yt_transcript"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true

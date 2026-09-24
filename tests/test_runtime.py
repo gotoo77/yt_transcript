@@ -1,0 +1,63 @@
+import json
+import os
+import socket
+from urllib.request import urlopen
+
+import psutil
+import pytest
+
+from yt_transcript.runtime import managed_process, start, stop
+
+
+def test_reused_pid_is_not_ours(tmp_path):
+    process = psutil.Process()
+    (tmp_path / "server.json").write_text(
+        json.dumps(
+            {
+                "pid": os.getpid(),
+                "created": process.create_time() - 10,
+                "command": process.cmdline(),
+            }
+        )
+    )
+    assert managed_process(tmp_path) is None
+    assert stop(tmp_path) is False
+    assert process.is_running()
+
+
+def test_same_pid_with_different_command_is_not_ours(tmp_path):
+    process = psutil.Process()
+    (tmp_path / "server.json").write_text(
+        json.dumps({"pid": os.getpid(), "created": process.create_time(), "command": ["foreign"]})
+    )
+    assert managed_process(tmp_path) is None
+    assert process.is_running()
+
+
+def test_corrupted_state_is_safe(tmp_path):
+    (tmp_path / "server.json").write_text("broken json")
+    assert managed_process(tmp_path) is None
+    assert stop(tmp_path) is False
+
+
+def test_real_server_lifecycle_and_occupied_port(tmp_path):
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        port = probe.getsockname()[1]
+    try:
+        process_id = start(tmp_path, "127.0.0.1", port)
+        assert managed_process(tmp_path).pid == process_id
+        assert start(tmp_path, "127.0.0.1", port) == process_id
+        with urlopen(f"http://127.0.0.1:{port}/health", timeout=3) as response:
+            assert json.load(response)["status"] == "ok"
+        with pytest.raises(OSError):
+            start(tmp_path / "other", "127.0.0.1", port)
+        assert managed_process(tmp_path).pid == process_id
+        assert stop(tmp_path) is True
+        process_id = start(tmp_path, "127.0.0.1", port)
+        with urlopen(f"http://127.0.0.1:{port}/health", timeout=3) as response:
+            assert response.status == 200
+    finally:
+        stop(tmp_path)
+    assert managed_process(tmp_path) is None
+    assert not psutil.pid_exists(process_id)

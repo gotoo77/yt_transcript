@@ -55,13 +55,23 @@ tmp/
 *.bak
 
 # Configuration files with secrets (if any)
-config.py
+/config.py
 .env
 
 # Test files
-test_*.py
-*_test.py
 
 # Jupyter Notebooks
 .ipynb_checkpoints/
 *.ipynb
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+.coverage*
+htmlcov/
+*.pid
+.runtime/
+.wheel-test/
+secret.key
+server.json*
+server.lock
+/exports/

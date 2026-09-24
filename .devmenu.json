@@ -1,0 +1,57 @@
+{
+  "project": {"name": "YouTube Transcript Analyzer", "type": "python", "icon": "🎬", "lang": "fr"},
+  "i18n": {
+    "fr": {
+      "HELP": "↑↓ : naviguer, Entrée : exécuter, q : quitter",
+      "TOO_SMALL": "Agrandissez le terminal pour afficher le menu.",
+      "SUCCESS": "Commande terminée avec succès",
+      "FAILURE": "Commande échouée (code : {code})",
+      "PRESS_ENTER": "Entrée pour revenir au menu",
+      "QUIT": "Fermeture du menu",
+      "POWER_ERR": "Impossible de lancer la commande",
+      "PS_ADAPT": "Adaptation PowerShell",
+      "MAIN_TITLE": "Administration YouTube Transcript Analyzer",
+      "INSTALL": "Installer / synchroniser", "INSTALL_DESC": "Crée .venv avec les versions de uv.lock",
+      "START": "Démarrer", "START_DESC": "Serveur Waitress en arrière-plan, port 5001",
+      "STOP": "Arrêter", "STOP_DESC": "Arrête uniquement le serveur géré par ce projet",
+      "RESTART": "Redémarrer", "RESTART_DESC": "Arrête puis relance le serveur",
+      "STATUS": "Statut", "STATUS_DESC": "Vérifie l'identité du processus ; code 1 si arrêté",
+      "LOGS": "Logs", "LOGS_DESC": "Affiche les 50 dernières lignes",
+      "FOLLOW": "Suivre les logs", "FOLLOW_DESC": "Suivi continu ; Ctrl+C pour revenir",
+      "DEV": "Mode développement", "DEV_DESC": "Serveur interactif avec debug et rechargement",
+      "CHECK": "Tous les contrôles", "CHECK_DESC": "Ruff, format, mypy et tests avec couverture",
+      "TEST": "Tests et couverture", "TEST_DESC": "TU et intégration sans appels YouTube",
+      "LINT": "Ruff", "LINT_DESC": "Analyse statique sans modification",
+      "FORMAT": "Formater", "FORMAT_DESC": "Applique Ruff format aux fichiers Python",
+      "TYPES": "Mypy", "TYPES_DESC": "Contrôle tous les modules applicatifs",
+      "BUILD": "Construire wheel / sdist", "BUILD_DESC": "Produit les distributions dans dist/",
+      "WHEEL": "Vérifier le wheel", "WHEEL_DESC": "Installation isolée puis démarrage HTTP ; build requis",
+      "INFO": "Configuration", "INFO_DESC": "Affiche Python et les chemins des données / logs",
+      "QUIT_ITEM": "Quitter"
+    }
+  },
+  "menus": {
+    "main": {
+      "title": "MAIN_TITLE",
+      "items": [
+        {"label": "INSTALL", "desc": "INSTALL_DESC", "key": "i", "icon": "📦", "command": "uv sync --locked"},
+        {"label": "START", "desc": "START_DESC", "key": "s", "icon": "▶", "command": "uv run yt-transcript start"},
+        {"label": "STOP", "desc": "STOP_DESC", "key": "x", "icon": "■", "command": "uv run yt-transcript stop"},
+        {"label": "RESTART", "desc": "RESTART_DESC", "key": "r", "icon": "↻", "command": "uv run yt-transcript restart"},
+        {"label": "STATUS", "desc": "STATUS_DESC", "key": "e", "icon": "ℹ", "command": "uv run yt-transcript status"},
+        {"label": "LOGS", "desc": "LOGS_DESC", "key": "l", "icon": "📄", "command": "uv run yt-transcript logs"},
+        {"label": "FOLLOW", "desc": "FOLLOW_DESC", "key": "j", "icon": "📜", "command": "uv run yt-transcript logs --follow"},
+        {"label": "DEV", "desc": "DEV_DESC", "key": "d", "icon": "🛠", "command": "uv run yt-transcript dev"},
+        {"label": "CHECK", "desc": "CHECK_DESC", "key": "c", "icon": "✓", "command": "uv run python scripts/check.py"},
+        {"label": "TEST", "desc": "TEST_DESC", "key": "t", "icon": "🧪", "command": "uv run pytest --cov --cov-report=html --cov-report=term"},
+        {"label": "LINT", "desc": "LINT_DESC", "key": "u", "icon": "🔎", "command": "uv run ruff check ."},
+        {"label": "FORMAT", "desc": "FORMAT_DESC", "key": "f", "icon": "✨", "command": "uv run ruff format ."},
+        {"label": "TYPES", "desc": "TYPES_DESC", "key": "m", "icon": "🔤", "command": "uv run mypy"},
+        {"label": "BUILD", "desc": "BUILD_DESC", "key": "b", "icon": "🔨", "command": "uv build"},
+        {"label": "WHEEL", "desc": "WHEEL_DESC", "key": "w", "icon": "📦", "command": "uv run python scripts/smoke_wheel.py"},
+        {"label": "INFO", "desc": "INFO_DESC", "key": "p", "icon": "ℹ", "command": "uv run yt-transcript info"},
+        {"label": "QUIT_ITEM", "key": "q", "icon": "🚪", "action": "exit"}
+      ]
+    }
+  }
+}
