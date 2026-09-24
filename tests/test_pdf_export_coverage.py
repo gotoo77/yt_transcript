@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import pytest
 from pypdf import PdfReader
 
-from yt_transcript.database import get_analysis_by_id, save_analysis
+from yt_transcript.database import save_analysis
 from yt_transcript.pdf_export_service import PDFExportService
 
 
