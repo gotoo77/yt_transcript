@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Any, cast
 
 from flask import Flask, current_app
-from sqlalchemy import JSON, DateTime, Float, Integer, String, Text, create_engine
+from sqlalchemy import JSON, DateTime, Float, Integer, String, Text, create_engine, select
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
@@ -69,6 +69,66 @@ class Analysis(Base):
 
     def __repr__(self) -> str:
         return f"<Analysis(id={self.id}, mode={self.analysis_mode}, created_at={self.created_at})>"
+
+
+
+class Transcript(Base):
+    """Saved transcript, independent of analysis."""
+    __tablename__ = "transcripts"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    video_id: Mapped[str] = mapped_column(String(11), unique=True, nullable=False, index=True)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+def save_transcript(video_id: str, text: str) -> bool:
+    db = get_db_session()
+    try:
+        row = db.scalar(select(Transcript).where(Transcript.video_id == video_id))
+        if row is None:
+            db.add(Transcript(video_id=video_id, text=text))
+        else:
+            row.text = text
+        db.commit()
+        return True
+    except Exception:
+        db.rollback()
+        logger.exception("Unable to save transcript")
+        return False
+    finally:
+        db.close()
+
+
+def list_transcripts(limit: int = 50) -> list[Transcript]:
+    db = get_db_session()
+    try:
+        return list(db.scalars(select(Transcript).order_by(Transcript.created_at.desc(), Transcript.id.desc()).limit(limit)))
+    finally:
+        db.close()
+
+
+def find_transcript(video_id: str) -> Transcript | None:
+    db = get_db_session()
+    try:
+        return db.scalar(select(Transcript).where(Transcript.video_id == video_id))
+    finally:
+        db.close()
+
+
+def delete_transcript(video_id: str) -> bool:
+    db = get_db_session()
+    try:
+        row = db.scalar(select(Transcript).where(Transcript.video_id == video_id))
+        if row is None:
+            return False
+        db.delete(row)
+        db.commit()
+        return True
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
 
 
 def init_database(app: Flask) -> None:
