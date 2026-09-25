@@ -9,18 +9,40 @@ class DashboardManager {
         this.charts = {};
         this.refreshInterval = null;
         this.isLoading = false;
-        
+        this.lastData = null;
+
         this.initializeEventListeners();
+        this.updatePeriodLabels();
         this.loadDashboard();
         this.startAutoRefresh();
     }
 
     initializeEventListeners() {
         // Period selector buttons
-        document.querySelectorAll('.period-btn').forEach(btn => {
+        document.querySelectorAll('[data-period]').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 this.changePeriod(parseInt(e.target.dataset.period));
             });
+        });
+
+        document.querySelectorAll('[data-export-format]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.exportReport(btn.dataset.exportFormat, btn);
+            });
+        });
+
+        window.addEventListener('yt-theme-change', () => {
+            if (this.lastData) {
+                this.renderCharts(this.lastData);
+            }
+        });
+
+        window.addEventListener('yt-language-change', () => {
+            this.updatePeriodLabels();
+            if (this.lastData) {
+                this.renderDashboard(this.lastData);
+                this.updateRefreshStatus(this.t('dashboard.updated'));
+            }
         });
 
         // Auto-refresh toggle (could be added)
@@ -34,14 +56,32 @@ class DashboardManager {
         });
     }
 
+    t(key, params = {}) {
+        return window.YTI18n?.t(key, params) ?? key;
+    }
+
+    dateLocale() {
+        return window.YTI18n?.getDateLocale?.() ?? 'fr-FR';
+    }
+
+    updatePeriodLabels() {
+        document.querySelectorAll('[data-period]').forEach(btn => {
+            const days = Number(btn.dataset.period);
+            btn.textContent = days === 365
+                ? this.t('dashboard.year')
+                : this.t('dashboard.days', {count:days});
+        });
+    }
+
     changePeriod(days) {
         this.currentPeriod = days;
         
         // Update UI
-        document.querySelectorAll('.period-btn').forEach(btn => {
-            btn.classList.remove('active');
+        document.querySelectorAll('[data-period]').forEach(btn => {
+            const active = Number(btn.dataset.period) === days;
+            btn.classList.toggle('active', active);
+            btn.setAttribute('aria-pressed', String(active));
         });
-        document.querySelector(`[data-period="${days}"]`).classList.add('active');
         
         // Reload data
         this.loadDashboard();
@@ -59,21 +99,22 @@ class DashboardManager {
             
             if (result.success && result.data) {
                 await this.renderDashboard(result.data);
-                this.updateRefreshStatus('Données mises à jour');
+                this.showLoading(false);
+                this.updateRefreshStatus(this.t('dashboard.updated'));
             } else {
-                this.showError(result.error || 'Erreur lors du chargement');
+                this.showError(result.error || this.t('dashboard.loadError'));
             }
         } catch (error) {
             console.error('Erreur dashboard:', error);
-            this.showError('Erreur de connexion');
+            this.showError(this.t('dashboard.connectionError'));
         } finally {
             this.isLoading = false;
-            this.showLoading(false);
         }
     }
 
     async renderDashboard(data) {
         console.log('Dashboard data:', data);
+        this.lastData = data;
         
         // Render KPIs
         this.renderKPIs(data.kpis);
@@ -146,26 +187,50 @@ class DashboardManager {
         }
     }
 
+    getChartPalette() {
+        const styles = getComputedStyle(document.documentElement);
+        const read = (name) => styles.getPropertyValue(name).trim();
+        return {
+            ink: read('--ui-ink'),
+            muted: read('--ui-muted'),
+            surface: read('--ui-surface'),
+            grid: read('--ui-chart-grid'),
+            accent: read('--ui-accent'),
+            accentSoft: read('--ui-accent-soft'),
+            success: read('--ui-success'),
+            danger: read('--ui-danger'),
+            warning: read('--ui-warning'),
+            series: [
+                read('--ui-chart-1'),
+                read('--ui-chart-2'),
+                read('--ui-chart-3'),
+                read('--ui-chart-4'),
+                read('--ui-chart-5')
+            ]
+        };
+    }
+
     async createAnalysesChart(dailyData) {
         const ctx = document.getElementById('analysesChart').getContext('2d');
         
-        const labels = dailyData.map(d => new Date(d.date).toLocaleDateString('fr-FR'));
+        const labels = dailyData.map(d => new Date(d.date).toLocaleDateString(this.dateLocale()));
         const counts = dailyData.map(d => d.count);
-        
+        const palette = this.getChartPalette();
+
         return new Chart(ctx, {
             type: 'line',
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'Analyses par jour',
+                    label: this.t('dashboard.datasetAnalyses'),
                     data: counts,
-                    borderColor: '#667eea',
-                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    borderColor: palette.accent,
+                    backgroundColor: palette.accentSoft,
                     borderWidth: 3,
                     fill: true,
                     tension: 0.4,
-                    pointBackgroundColor: '#667eea',
-                    pointBorderColor: '#fff',
+                    pointBackgroundColor: palette.accent,
+                    pointBorderColor: palette.surface,
                     pointBorderWidth: 2,
                     pointRadius: 6
                 }]
@@ -182,12 +247,20 @@ class DashboardManager {
                     y: {
                         beginAtZero: true,
                         ticks: {
-                            stepSize: 1
+                            stepSize: 1,
+                            color: palette.muted
+                        },
+                        grid: {
+                            color: palette.grid
                         }
                     },
                     x: {
                         ticks: {
-                            maxTicksLimit: 7
+                            maxTicksLimit: 7,
+                            color: palette.muted
+                        },
+                        grid: {
+                            color: palette.grid
                         }
                     }
                 },
@@ -205,7 +278,7 @@ class DashboardManager {
         
         const labels = Object.keys(modeData);
         const data = Object.values(modeData);
-        const colors = ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe'];
+        const palette = this.getChartPalette();
         
         return new Chart(ctx, {
             type: 'doughnut',
@@ -213,7 +286,7 @@ class DashboardManager {
                 labels: labels.map(l => l.charAt(0).toUpperCase() + l.slice(1)),
                 datasets: [{
                     data: data,
-                    backgroundColor: colors.slice(0, labels.length),
+                    backgroundColor: labels.map((_, index) => palette.series[index % palette.series.length]),
                     borderWidth: 0,
                     hoverOffset: 4
                 }]
@@ -226,7 +299,8 @@ class DashboardManager {
                         position: 'bottom',
                         labels: {
                             padding: 20,
-                            usePointStyle: true
+                            usePointStyle: true,
+                            color: palette.muted
                         }
                     }
                 }
@@ -239,13 +313,14 @@ class DashboardManager {
         
         const labels = Object.keys(sentimentData);
         const data = Object.values(sentimentData);
+        const palette = this.getChartPalette();
         const colors = {
-            'positif': '#28a745',
-            'neutre': '#ffc107', 
-            'négatif': '#dc3545'
+            'positif': palette.success,
+            'neutre': palette.warning,
+            'négatif': palette.danger
         };
-        
-        const backgroundColors = labels.map(label => colors[label] || '#6c757d');
+
+        const backgroundColors = labels.map(label => colors[label] || palette.muted);
         
         return new Chart(ctx, {
             type: 'bar',
@@ -270,7 +345,11 @@ class DashboardManager {
                     y: {
                         beginAtZero: true,
                         ticks: {
-                            stepSize: 1
+                            stepSize: 1,
+                            color: palette.muted
+                        },
+                        grid: {
+                            color: palette.grid
                         }
                     }
                 }
@@ -283,27 +362,16 @@ class DashboardManager {
         
         const labels = Object.keys(complexityData);
         const data = Object.values(complexityData);
-        
+        const palette = this.getChartPalette();
+
         return new Chart(ctx, {
             type: 'polarArea',
             data: {
                 labels: labels,
                 datasets: [{
                     data: data,
-                    backgroundColor: [
-                        'rgba(52, 152, 219, 0.6)',
-                        'rgba(46, 204, 113, 0.6)', 
-                        'rgba(241, 196, 15, 0.6)',
-                        'rgba(230, 126, 34, 0.6)',
-                        'rgba(231, 76, 60, 0.6)'
-                    ],
-                    borderColor: [
-                        'rgba(52, 152, 219, 1)',
-                        'rgba(46, 204, 113, 1)',
-                        'rgba(241, 196, 15, 1)', 
-                        'rgba(230, 126, 34, 1)',
-                        'rgba(231, 76, 60, 1)'
-                    ],
+                    backgroundColor: palette.series,
+                    borderColor: palette.surface,
                     borderWidth: 2
                 }]
             },
@@ -314,7 +382,8 @@ class DashboardManager {
                     legend: {
                         position: 'bottom',
                         labels: {
-                            fontSize: 10
+                            fontSize: 10,
+                            color: palette.muted
                         }
                     }
                 }
@@ -326,22 +395,25 @@ class DashboardManager {
         const ctx = document.getElementById('weekdayChart').getContext('2d');
         
         const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-        const weekdaysFr = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
-        
+        const dayLabels = this.dateLocale() === 'en-GB'
+            ? weekdays
+            : ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+
         const data = weekdays.map(day => weekdayData[day] || 0);
-        
+        const palette = this.getChartPalette();
+
         return new Chart(ctx, {
             type: 'radar',
             data: {
-                labels: weekdaysFr,
+                labels: dayLabels,
                 datasets: [{
-                    label: 'Activité',
+                    label: this.t('dashboard.chartWeekday'),
                     data: data,
-                    borderColor: '#667eea',
-                    backgroundColor: 'rgba(102, 126, 234, 0.2)',
+                    borderColor: palette.accent,
+                    backgroundColor: palette.accentSoft,
                     borderWidth: 2,
-                    pointBackgroundColor: '#667eea',
-                    pointBorderColor: '#fff',
+                    pointBackgroundColor: palette.accent,
+                    pointBorderColor: palette.surface,
                     pointBorderWidth: 2
                 }]
             },
@@ -357,7 +429,18 @@ class DashboardManager {
                     r: {
                         beginAtZero: true,
                         ticks: {
-                            stepSize: 1
+                            stepSize: 1,
+                            color: palette.muted,
+                            backdropColor: 'transparent'
+                        },
+                        grid: {
+                            color: palette.grid
+                        },
+                        angleLines: {
+                            color: palette.grid
+                        },
+                        pointLabels: {
+                            color: palette.muted
                         }
                     }
                 }
@@ -370,15 +453,16 @@ class DashboardManager {
         
         const labels = Object.keys(wordRangesData);
         const data = Object.values(wordRangesData);
-        
+        const palette = this.getChartPalette();
+
         return new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: labels,
                 datasets: [{
                     data: data,
-                    backgroundColor: 'rgba(102, 126, 234, 0.6)',
-                    borderColor: '#667eea',
+                    backgroundColor: palette.accentSoft,
+                    borderColor: palette.accent,
                     borderWidth: 1,
                     borderRadius: 4
                 }]
@@ -395,12 +479,20 @@ class DashboardManager {
                     y: {
                         beginAtZero: true,
                         ticks: {
-                            stepSize: 1
+                            stepSize: 1,
+                            color: palette.muted
+                        },
+                        grid: {
+                            color: palette.grid
                         }
                     },
                     x: {
                         ticks: {
-                            fontSize: 10
+                            fontSize: 10,
+                            color: palette.muted
+                        },
+                        grid: {
+                            color: palette.grid
                         }
                     }
                 }
@@ -421,23 +513,23 @@ class DashboardManager {
                 <div class="insight-card">
                     <div class="insight-title">
                         <i class="fas fa-chart-bar text-info"></i>
-                        Métriques de Contenu
+                        ${this.t('dashboard.contentMetrics')}
                     </div>
                     <div class="metric-row">
-                        <span>Mots moyens par analyse</span>
+                        <span>${this.t('dashboard.avgWords')}</span>
                         <strong>${this.formatNumber(metrics.avg_words_per_analysis || 0)}</strong>
                     </div>
                     <div class="metric-row">
-                        <span>Vocabulaire unique moyen</span>
+                        <span>${this.t('dashboard.avgUnique')}</span>
                         <strong>${this.formatNumber(metrics.avg_unique_words || 0)}</strong>
                     </div>
                     <div class="metric-row">
-                        <span>Richesse vocabulaire</span>
+                        <span>${this.t('dashboard.avgRichness')}</span>
                         <strong>${(metrics.avg_vocabulary_richness || 0).toFixed(2)}</strong>
                     </div>
                     <div class="metric-row">
-                        <span>Sentiment moyen</span>
-                        <strong style="color: ${this.getSentimentColor(metrics.avg_sentiment)}">
+                        <span>${this.t('dashboard.avgSentiment')}</span>
+                        <strong class="${this.getSentimentClass(metrics.avg_sentiment)}">
                             ${(metrics.avg_sentiment || 0).toFixed(3)}
                         </strong>
                     </div>
@@ -452,22 +544,22 @@ class DashboardManager {
                 <div class="insight-card">
                     <div class="insight-title">
                         <i class="fas fa-clock text-warning"></i>
-                        Patterns d'Utilisation
+                        ${this.t('dashboard.patterns')}
                     </div>
                     <div class="metric-row">
-                        <span>Analyses totales étudiées</span>
+                        <span>${this.t('dashboard.patternsTotal')}</span>
                         <strong>${patterns.total_patterns_analyzed || 0}</strong>
                     </div>
                     <div class="metric-row">
-                        <span>Mode préféré</span>
+                        <span>${this.t('dashboard.preferredMode')}</span>
                         <strong>${this.getPreferredMode(patterns.preferred_modes)}</strong>
                     </div>
                     <div class="metric-row">
-                        <span>Jour le plus actif</span>
+                        <span>${this.t('dashboard.activeDay')}</span>
                         <strong>${this.getMostActiveDay(patterns.active_weekdays)}</strong>
                     </div>
                     <div class="metric-row">
-                        <span>Heure de pic</span>
+                        <span>${this.t('dashboard.peakHour')}</span>
                         <strong>${this.getPeakHour(patterns.peak_hours)}h</strong>
                     </div>
                 </div>
@@ -490,7 +582,7 @@ class DashboardManager {
             const top = topAnalyses.most_words[0];
             html += `
                 <div class="metric-row">
-                    <span>Plus de mots</span>
+                    <span>${this.t('dashboard.mostWords')}</span>
                     <strong>${this.formatNumber(top.words)} mots</strong>
                 </div>
             `;
@@ -500,7 +592,7 @@ class DashboardManager {
             const top = topAnalyses.most_complex[0];
             html += `
                 <div class="metric-row">
-                    <span>Plus complexe</span>
+                    <span>${this.t('dashboard.mostComplex')}</span>
                     <strong>${top.complexity.toFixed(3)}</strong>
                 </div>
             `;
@@ -510,17 +602,35 @@ class DashboardManager {
             const top = topAnalyses.richest_vocabulary[0];
             html += `
                 <div class="metric-row">
-                    <span>Vocabulaire le plus riche</span>
+                    <span>${this.t('dashboard.richest')}</span>
                     <strong>${top.richness.toFixed(3)}</strong>
                 </div>
             `;
         }
         
         if (html === '') {
-            html = '<p class="text-muted text-center">Aucune donnée disponible</p>';
+            html = `<p class="text-muted text-center">${this.t('dashboard.noData')}</p>`;
         }
         
         container.innerHTML = html;
+    }
+
+    exportReport(format, button) {
+        const originalText = button.innerHTML;
+        button.innerHTML = `<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> ${this.t('dashboard.exporting')}`;
+        button.disabled = true;
+
+        const link = document.createElement('a');
+        link.href = `/api/dashboard/export/${format}?days=${this.currentPeriod}`;
+        link.download = '';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        setTimeout(() => {
+            button.innerHTML = originalText;
+            button.disabled = false;
+        }, 2000);
     }
 
     // Utility functions
@@ -530,13 +640,13 @@ class DashboardManager {
         } else if (num >= 1000) {
             return (num / 1000).toFixed(1) + 'K';
         }
-        return num.toLocaleString('fr-FR');
+        return num.toLocaleString(this.dateLocale());
     }
 
-    getSentimentColor(score) {
-        if (score > 0.1) return '#28a745';
-        if (score < -0.1) return '#dc3545';
-        return '#ffc107';
+    getSentimentClass(score) {
+        if (score > 0.1) return 'sentiment-positive';
+        if (score < -0.1) return 'sentiment-negative';
+        return 'sentiment-neutral';
     }
 
     getPreferredMode(modes) {
@@ -551,6 +661,7 @@ class DashboardManager {
         const entries = Object.entries(weekdays);
         if (entries.length === 0) return 'N/A';
         const dayName = entries.sort((a, b) => b[1] - a[1])[0][0];
+        if (this.dateLocale() === 'en-GB') return dayName;
         const dayTranslations = {
             'Monday': 'Lundi', 'Tuesday': 'Mardi', 'Wednesday': 'Mercredi',
             'Thursday': 'Jeudi', 'Friday': 'Vendredi', 'Saturday': 'Samedi', 'Sunday': 'Dimanche'
@@ -566,21 +677,26 @@ class DashboardManager {
     }
 
     showLoading(show) {
-        document.getElementById('loading-state').style.display = show ? 'block' : 'none';
-        document.getElementById('dashboard-content').style.display = show ? 'none' : 'block';
+        document.getElementById('loading-state').hidden = !show;
+        document.getElementById('dashboard-content').hidden = show;
     }
 
     showError(message) {
         console.error('Dashboard error:', message);
-        document.getElementById('loading-state').innerHTML = `
-            <div class="alert alert-danger">
-                <i class="fas fa-exclamation-triangle"></i>
-                <strong>Erreur:</strong> ${message}
-                <button class="btn btn-sm btn-outline-danger ms-2" onclick="dashboard.loadDashboard()">
-                    Réessayer
-                </button>
+        const loadingState = document.getElementById('loading-state');
+        document.getElementById('dashboard-content').hidden = true;
+        loadingState.hidden = false;
+        loadingState.innerHTML = `
+            <div class="ui-empty-state ui-empty-state-error" role="alert">
+                <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+                <div>
+                    <strong>${this.t('dashboard.errorTitle')}</strong>
+                    <p>${message}</p>
+                </div>
+                <button class="btn btn-outline-danger" type="button" id="dashboard-retry">${this.t('dashboard.retry')}</button>
             </div>
         `;
+        document.getElementById('dashboard-retry').addEventListener('click', () => this.loadDashboard());
     }
 
     updateRefreshStatus(message) {
@@ -598,7 +714,7 @@ class DashboardManager {
         if (timestamp) {
             const date = new Date(timestamp);
             document.getElementById('last-update').textContent = 
-                date.toLocaleString('fr-FR');
+                date.toLocaleString(this.dateLocale());
         }
     }
 
@@ -627,34 +743,5 @@ document.addEventListener('DOMContentLoaded', () => {
     dashboard = new DashboardManager();
 });
 
-// Export function
-function exportReport(format) {
-    const currentPeriod = dashboard ? dashboard.currentPeriod : 30;
-    
-    // Show loading state
-    const exportBtn = event.target;
-    const originalText = exportBtn.innerHTML;
-    exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Export...';
-    exportBtn.disabled = true;
-    
-    // Create download link
-    const url = `/api/dashboard/export/${format}?days=${currentPeriod}`;
-    
-    // Use a temporary link to trigger download
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = '';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    // Reset button after delay
-    setTimeout(() => {
-        exportBtn.innerHTML = originalText;
-        exportBtn.disabled = false;
-    }, 2000);
-}
-
-// Export for global access
+// Export the manager reference for diagnostics/integration hooks.
 window.dashboard = dashboard;
-window.exportReport = exportReport;

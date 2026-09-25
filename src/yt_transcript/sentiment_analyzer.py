@@ -260,10 +260,6 @@ def calculate_readability_metrics(text: str) -> dict[str, Any] | None:
         num_words = len(words)
         num_syllables = estimate_syllables(" ".join(words))
 
-        # Éviter la division par zéro
-        if num_sentences == 0 or num_words == 0:
-            return None
-
         # Moyennes
         avg_sentence_length = num_words / num_sentences
         avg_syllables_per_word = num_syllables / num_words

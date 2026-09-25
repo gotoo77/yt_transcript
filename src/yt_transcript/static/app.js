@@ -1,3 +1,17 @@
+const uiT = (key, params = {}) => window.YTI18n?.t(key, params) ?? key;
+const uiDateLocale = () => window.YTI18n?.getDateLocale?.() ?? 'fr-FR';
+
+function showUiMessage(message, tone = 'info') {
+    const status = document.getElementById('ui-status');
+    status.className = `ui-status ui-status-${tone}`;
+    status.textContent = message;
+    status.hidden = false;
+    window.clearTimeout(showUiMessage.timeoutId);
+    showUiMessage.timeoutId = window.setTimeout(() => {
+        status.hidden = true;
+    }, 5000);
+}
+
 document.getElementById('transcribe-btn').addEventListener('click', async () => {
     const videoId = document.getElementById('video-id').value.trim();
     const selectedLanguage = document.getElementById('language-select').value;
@@ -5,7 +19,7 @@ document.getElementById('transcribe-btn').addEventListener('click', async () => 
     console.log("[Transcription] Langue sélectionnée :", selectedLanguage);
 
     if (!videoId) {
-        document.getElementById('status-msg').textContent = '⚠️ Veuillez saisir un ID ou URL de vidéo.';
+        document.getElementById('status-msg').textContent = uiT('status.videoRequired');
         return;
     }
 
@@ -13,10 +27,10 @@ document.getElementById('transcribe-btn').addEventListener('click', async () => 
     const transcribeBtn = document.getElementById('transcribe-btn');
     const originalText = transcribeBtn.textContent;
     transcribeBtn.disabled = true;
-    transcribeBtn.textContent = 'Traitement...';
+    transcribeBtn.textContent = uiT('status.processing');
     
     const languageText = selectedLanguage === 'auto' ? 'auto-détection' : selectedLanguage;
-    document.getElementById('status-msg').textContent = `⏳ Transcription en cours (${languageText})...`;
+    document.getElementById('status-msg').textContent = uiT('status.transcribing', {language: languageText});
     document.getElementById('analyze-btn').disabled = true;
 
     try {
@@ -42,15 +56,15 @@ document.getElementById('transcribe-btn').addEventListener('click', async () => 
             document.getElementById('download-btn').disabled = false;
             
             const charCount = data.transcript.length;
-            const message = data.message || 'Transcription réussie';
+            const message = data.message || uiT('status.transcribedDefault');
             
             // Afficher des informations détaillées sur la langue détectée
-            let statusMessage = `✅ ${message} (${charCount} caractères)`;
+            let statusMessage = uiT('status.transcribed', {message, count: charCount});
             
             if (data.detected_language && data.detected_language_name) {
                 console.log('🌍 Langue détectée:', data.detected_language_name);
                 if (data.requested_language !== 'auto' && data.detected_language !== data.requested_language) {
-                    statusMessage += ` 🔄 Fallback appliqué`;
+                    statusMessage += ` ${uiT('status.fallback')}`;
                 }
             }
             
@@ -63,7 +77,7 @@ document.getElementById('transcribe-btn').addEventListener('click', async () => 
         }
     } catch (err) {
         console.error("[Transcription] Erreur réseau :", err);
-        document.getElementById('status-msg').textContent = '❌ Erreur de connexion au serveur';
+        document.getElementById('status-msg').textContent = uiT('status.network');
     } finally {
         // Réactivation du bouton
         transcribeBtn.disabled = false;
@@ -102,7 +116,7 @@ document.getElementById('analyze-btn').addEventListener('click', async () => {
     console.log('Texte:', text.length, 'caractères, Mode:', mode, 'Max mots:', maxWords);
 
     if (!text) {
-        alert('Veuillez d\'abord transcrire une vidéo ou saisir du texte.');
+        showUiMessage(uiT('status.noText'), 'warning');
         return;
     }
 
@@ -110,7 +124,7 @@ document.getElementById('analyze-btn').addEventListener('click', async () => {
     const analyzeBtn = document.getElementById('analyze-btn');
     const originalText = analyzeBtn.textContent;
     analyzeBtn.disabled = true;
-    analyzeBtn.textContent = 'Analyse en cours...';
+    analyzeBtn.textContent = uiT('status.analyzing');
 
     console.log(`[Analyse] Début analyse (mode: ${mode}, max_words: ${maxWords})`);
     try {
@@ -137,8 +151,8 @@ document.getElementById('analyze-btn').addEventListener('click', async () => {
                 // Affichage pour l'analyse de style
                 const maxWordsDisplay = mode === 'style' ? maxWords : data.result.length;
                 resultDiv.innerHTML = `
-                    <h5><i class="fas fa-chart-bar"></i> Analyse stylistique</h5>
-                    <p><strong>Top ${maxWordsDisplay} des mots les plus fréquents</strong> (${data.result.length} résultats sur ${data.word_count} mots analysés)</p>
+                    <h5><i class="fas fa-chart-bar"></i> ${uiT('style.title')}</h5>
+                    <p><strong>${uiT('style.top', {max:maxWordsDisplay, results:data.result.length, words:data.word_count})}</strong></p>
                     <div class="row">
                         <div class="col-md-6">
                             <ul class="list-group list-group-flush">
@@ -170,28 +184,33 @@ document.getElementById('analyze-btn').addEventListener('click', async () => {
                 // Affichage pour l'analyse conceptuelle
                 if (data.result.length > 0) {
                         resultDiv.innerHTML = `
-                            <h5><i class="fas fa-brain"></i> Analyse conceptuelle</h5>
-                            <p><strong>${data.result.length} thèmes détectés</strong> dans le texte (${data.word_count} mots analysés)</p>
-                            ${data.result.map(([category, info]) => `
-                                <div class="concept-category mb-3 p-3 bg-light rounded">
-                                    <h6 class="text-capitalize">
-                                        <i class="fas fa-tag text-primary"></i> ${category}
-                                        <span class="badge bg-success ms-2">${info.percentage}%</span>
-                                    </h6>
-                                    <p class="mb-1"><strong>Score:</strong> ${info.score} mentions</p>
-                                    <p class="mb-0"><strong>Mots-clés:</strong> ${[...new Set(info.words)].map(word => `<span class="badge bg-secondary me-1">${word}</span>`).join('')}</p>
-                                </div>
-                            `).join('')}
+                            <h5><i class="fas fa-brain"></i> ${uiT('concepts.title')}</h5>
+                            <p><strong>${uiT('concepts.detected', {count:data.result.length, words:data.word_count})}</strong></p>
+                            <div class="concept-grid">
+                                ${data.result.map(([category, info]) => `
+                                    <article class="concept-category">
+                                        <div class="concept-heading">
+                                            <h6 class="text-capitalize mb-0">
+                                                <i class="fas fa-tag text-primary" aria-hidden="true"></i> ${category}
+                                            </h6>
+                                            <span class="badge bg-success">${info.percentage}%</span>
+                                        </div>
+                                        <p class="concept-score">${uiT('concepts.mentions', {count:info.score})}</p>
+                                        <div class="concept-keywords" aria-label="${uiT('concepts.keywords')}">
+                                            ${[...new Set(info.words)].map(word => `<span class="badge bg-secondary">${word}</span>`).join('')}
+                                        </div>
+                                    </article>
+                                `).join('')}
+                            </div>
                         `;
                         
                         // Créer le graphique des concepts
                         createConceptsChart(data.result);
                     } else {
                         resultDiv.innerHTML = `
-                            <h5><i class="fas fa-brain"></i> Analyse conceptuelle</h5>
+                            <h5><i class="fas fa-brain"></i> ${uiT('concepts.title')}</h5>
                             <div class="alert alert-info">
-                                <i class="fas fa-info-circle"></i> Aucun thème spécifique détecté dans ce texte.
-                                Les concepts recherchés: technologie, économie, social, santé, environnement.
+                                <i class="fas fa-info-circle"></i> ${uiT('concepts.none')}
                             </div>
                         `;
                     }
@@ -205,7 +224,7 @@ document.getElementById('analyze-btn').addEventListener('click', async () => {
             `;
         }
         
-        resultDiv.style.display = 'block';
+        resultDiv.hidden = false;
         resultDiv.scrollIntoView({ behavior: 'smooth' });
         
         // Charger les statistiques et le nuage de mots après l'analyse
@@ -225,7 +244,7 @@ document.getElementById('analyze-btn').addEventListener('click', async () => {
                 <i class="fas fa-exclamation-triangle"></i> Erreur de connexion au serveur
             </div>
         `;
-        resultDiv.style.display = 'block';
+        resultDiv.hidden = false;
     } finally {
         // Réactivation du bouton
         analyzeBtn.disabled = false;
@@ -240,11 +259,10 @@ document.getElementById('search-btn').addEventListener('click', () => {
     const searchBox = document.getElementById('search-box');
     const searchInput = document.getElementById('search-input');
     
-    if (searchBox.style.display === 'none') {
-        searchBox.style.display = 'block';
+    searchBox.hidden = !searchBox.hidden;
+    if (!searchBox.hidden) {
         searchInput.focus();
     } else {
-        searchBox.style.display = 'none';
         clearHighlights();
     }
 });
@@ -262,7 +280,7 @@ document.getElementById('search-input').addEventListener('input', function() {
     }
     
     if (query.length < 2) {
-        resultsDiv.textContent = 'Tapez au moins 2 caractères...';
+        resultsDiv.textContent = uiT('search.minChars');
         return;
     }
     
@@ -289,14 +307,14 @@ function searchInText(query, text) {
     const matches = text.match(regex);
     
     if (matches) {
-        resultsDiv.innerHTML = `<i class="fas fa-search"></i> ${matches.length} occurrence(s) trouvée(s)`;
+        resultsDiv.innerHTML = `<i class="fas fa-search" aria-hidden="true"></i> ${uiT('search.matches', {count:matches.length})}`;
         
         // Surlignage dans le textarea (simulation avec styles)
         const highlightedText = text.replace(regex, '<span class="highlight">$&</span>');
         // Note: Le textarea ne supporte pas le HTML, donc on utilise une approche alternative
         
     } else {
-        resultsDiv.innerHTML = `<i class="fas fa-search"></i> Aucun résultat pour "${query}"`;
+        resultsDiv.innerHTML = `<i class="fas fa-search" aria-hidden="true"></i> ${uiT('search.none', {query})}`;
     }
 }
 
@@ -311,14 +329,14 @@ document.getElementById('summary-btn').addEventListener('click', async () => {
     const text = document.getElementById('transcript-textarea').value.trim();
     
     if (!text) {
-        alert('Veuillez d\'abord transcrire une vidéo ou saisir du texte.');
+        showUiMessage(uiT('status.noText'), 'warning');
         return;
     }
     
     const summaryBtn = document.getElementById('summary-btn');
     const originalText = summaryBtn.textContent;
     summaryBtn.disabled = true;
-    summaryBtn.textContent = 'Génération...';
+    summaryBtn.textContent = uiT('status.summaryGenerating');
     
     try {
         const res = await fetch('/summary', {
@@ -335,36 +353,36 @@ document.getElementById('summary-btn').addEventListener('click', async () => {
             
             summaryContent.innerHTML = `
                 <div class="mb-3">
-                    <p class="mb-2"><strong>Résumé :</strong></p>
+                    <p class="mb-2"><strong>${uiT('summary.title')}</strong></p>
                     <p class="lead">${data.summary}</p>
                 </div>
                 <div class="row text-center">
                     <div class="col-4">
-                        <small class="text-muted">Texte original</small><br>
+                        <small class="text-muted">${uiT('summary.original')}</small><br>
                         <strong>${data.original_length}</strong> caractères
                     </div>
                     <div class="col-4">
-                        <small class="text-muted">Résumé</small><br>
+                        <small class="text-muted">${uiT('summary.summary')}</small><br>
                         <strong>${data.summary_length}</strong> caractères
                     </div>
                     <div class="col-4">
-                        <small class="text-muted">Compression</small><br>
+                        <small class="text-muted">${uiT('summary.compression')}</small><br>
                         <strong class="text-success">${data.compression_ratio}%</strong>
                     </div>
                 </div>
             `;
             
-            summarySection.style.display = 'block';
+            summarySection.hidden = false;
             summarySection.classList.add('fade-in');
             summarySection.scrollIntoView({ behavior: 'smooth' });
             
         } else {
-            alert('Erreur: ' + data.error);
+            showUiMessage(uiT('status.error', {message:data.error}), 'danger');
         }
         
     } catch (err) {
         console.error('Erreur résumé:', err);
-        alert('Erreur de connexion au serveur');
+        showUiMessage(uiT('status.connectionError'), 'danger');
     } finally {
         summaryBtn.disabled = false;
         summaryBtn.textContent = originalText;
@@ -404,6 +422,68 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Application initialisée - Boutons:', hasText ? 'activés' : 'désactivés');
 });
 
+function getUiChartPalette() {
+    const styles = getComputedStyle(document.documentElement);
+    const read = (name) => styles.getPropertyValue(name).trim();
+    return {
+        ink: read('--ui-ink'),
+        muted: read('--ui-muted'),
+        surface: read('--ui-surface'),
+        line: read('--ui-line'),
+        grid: read('--ui-chart-grid'),
+        accent: read('--ui-accent'),
+        accentSoft: read('--ui-accent-soft'),
+        series: [
+            read('--ui-chart-1'),
+            read('--ui-chart-2'),
+            read('--ui-chart-3'),
+            read('--ui-chart-4'),
+            read('--ui-chart-5')
+        ]
+    };
+}
+
+function applyMainChartTheme() {
+    const palette = getUiChartPalette();
+
+    if (frequencyChart) {
+        const dataset = frequencyChart.data.datasets[0];
+        dataset.backgroundColor = palette.accentSoft;
+        dataset.borderColor = palette.accent;
+        frequencyChart.options.plugins.title.color = palette.ink;
+        frequencyChart.options.scales.x.ticks.color = palette.muted;
+        frequencyChart.options.scales.y.ticks.color = palette.muted;
+        frequencyChart.options.scales.x.grid.color = palette.grid;
+        frequencyChart.options.scales.y.grid.color = palette.grid;
+        frequencyChart.update();
+    }
+
+    if (conceptsChart) {
+        const dataset = conceptsChart.data.datasets[0];
+        dataset.backgroundColor = palette.series;
+        dataset.borderColor = palette.surface;
+        conceptsChart.options.plugins.title.color = palette.ink;
+        conceptsChart.options.plugins.legend.labels.color = palette.muted;
+        conceptsChart.update();
+    }
+}
+
+window.addEventListener('yt-theme-change', applyMainChartTheme);
+
+window.addEventListener('yt-language-change', () => {
+    applyMainChartTheme();
+    if (frequencyChart) {
+        frequencyChart.data.datasets[0].label = uiT('chart.frequencyDataset');
+        frequencyChart.options.plugins.title.text = uiT('chart.frequency');
+        frequencyChart.update();
+    }
+    if (conceptsChart) {
+        conceptsChart.options.plugins.title.text = uiT('chart.concepts');
+        conceptsChart.update();
+    }
+});
+
+
 // Fonction pour créer le graphique de fréquence
 function createFrequencyChart(data) {
     const ctx = document.getElementById('frequency-chart').getContext('2d');
@@ -415,16 +495,17 @@ function createFrequencyChart(data) {
     
     const labels = data.map(([word, count]) => word);
     const counts = data.map(([word, count]) => count);
-    
+    const palette = getUiChartPalette();
+
     frequencyChart = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: labels,
             datasets: [{
-                label: 'Fréquence',
+                label: uiT('chart.frequencyDataset'),
                 data: counts,
-                backgroundColor: 'rgba(54, 162, 235, 0.6)',
-                borderColor: 'rgba(54, 162, 235, 1)',
+                backgroundColor: palette.accentSoft,
+                borderColor: palette.accent,
                 borderWidth: 2
             }]
         },
@@ -434,7 +515,8 @@ function createFrequencyChart(data) {
             plugins: {
                 title: {
                     display: true,
-                    text: 'Mots les plus fréquents'
+                    text: uiT('chart.frequency'),
+                    color: palette.ink
                 },
                 legend: {
                     display: false
@@ -444,20 +526,30 @@ function createFrequencyChart(data) {
                 y: {
                     beginAtZero: true,
                     ticks: {
-                        stepSize: 1
+                        stepSize: 1,
+                        color: palette.muted
+                    },
+                    grid: {
+                        color: palette.grid
                     }
                 },
                 x: {
                     ticks: {
-                        maxRotation: 45
+                        maxRotation: 45,
+                        color: palette.muted
+                    },
+                    grid: {
+                        color: palette.grid
                     }
                 }
             }
         }
     });
     
+    document.getElementById('frequency-chart-panel').hidden = false;
+    document.getElementById('concepts-chart-panel').hidden = true;
     const chartsSection = document.getElementById('charts-section');
-    chartsSection.style.display = 'block';
+    chartsSection.hidden = false;
     chartsSection.classList.add('fade-in');
 }
 
@@ -472,20 +564,17 @@ function createConceptsChart(data) {
     
     const labels = data.map(([category, info]) => category);
     const percentages = data.map(([category, info]) => info.percentage);
-    
-    const colors = [
-        '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8'
-    ];
-    
+    const palette = getUiChartPalette();
+
     conceptsChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
             labels: labels,
             datasets: [{
                 data: percentages,
-                backgroundColor: colors.slice(0, labels.length),
+                backgroundColor: labels.map((_, index) => palette.series[index % palette.series.length]),
                 borderWidth: 2,
-                borderColor: '#fff'
+                borderColor: palette.surface
             }]
         },
         options: {
@@ -494,22 +583,26 @@ function createConceptsChart(data) {
             plugins: {
                 title: {
                     display: true,
-                    text: 'Répartition des concepts'
+                    text: uiT('chart.concepts'),
+                    color: palette.ink
                 },
                 legend: {
                     position: 'bottom',
                     labels: {
                         padding: 20,
-                        usePointStyle: true
+                        usePointStyle: true,
+                        color: palette.muted
                     }
                 }
             }
         }
     });
     
+    document.getElementById('frequency-chart-panel').hidden = true;
+    document.getElementById('concepts-chart-panel').hidden = false;
     const chartsSection = document.getElementById('charts-section');
-    if (chartsSection.style.display !== 'block') {
-        chartsSection.style.display = 'block';
+    if (chartsSection.hidden) {
+        chartsSection.hidden = false;
         chartsSection.classList.add('fade-in');
     }
 }
@@ -531,46 +624,46 @@ async function loadStatistics(text) {
             
             statsContent.innerHTML = `
                 <div class="col-md-3 col-sm-6 mb-3">
-                    <div class="text-center p-3 bg-white rounded shadow-sm">
+                    <div class="stat-tile">
                         <h4 class="text-primary mb-1">${stats.total_words}</h4>
-                        <small class="text-muted">Mots total</small>
+                        <small class="text-muted">${uiT('stats.total')}</small>
                     </div>
                 </div>
                 <div class="col-md-3 col-sm-6 mb-3">
-                    <div class="text-center p-3 bg-white rounded shadow-sm">
+                    <div class="stat-tile">
                         <h4 class="text-success mb-1">${stats.unique_words}</h4>
-                        <small class="text-muted">Mots uniques</small>
+                        <small class="text-muted">${uiT('stats.unique')}</small>
                     </div>
                 </div>
                 <div class="col-md-3 col-sm-6 mb-3">
-                    <div class="text-center p-3 bg-white rounded shadow-sm">
+                    <div class="stat-tile">
                         <h4 class="text-info mb-1">${stats.reading_time_minutes}min</h4>
-                        <small class="text-muted">Temps lecture</small>
+                        <small class="text-muted">${uiT('stats.readingTime')}</small>
                     </div>
                 </div>
                 <div class="col-md-3 col-sm-6 mb-3">
-                    <div class="text-center p-3 bg-white rounded shadow-sm">
+                    <div class="stat-tile">
                         <h4 class="text-warning mb-1">${stats.complexity_score}</h4>
-                        <small class="text-muted">Complexité</small>
+                        <small class="text-muted">${uiT('stats.complexity')}</small>
                     </div>
                 </div>
                 <div class="col-12 mt-3">
                     <div class="row text-center">
                         <div class="col-md-4">
-                            <strong>Richesse vocabulaire:</strong> ${stats.vocabulary_richness}%
+                            <strong>${uiT('stats.richness')}:</strong> ${stats.vocabulary_richness}%
                         </div>
                         <div class="col-md-4">
-                            <strong>Longueur moyenne mot:</strong> ${stats.average_word_length} caract.
+                            <strong>${uiT('stats.averageWord')}:</strong> ${stats.average_word_length} caract.
                         </div>
                         <div class="col-md-4">
-                            <strong>Phrases:</strong> ${stats.sentences}
+                            <strong>${uiT('stats.sentences')}:</strong> ${stats.sentences}
                         </div>
                     </div>
                 </div>
             `;
             
             const statsSection = document.getElementById('stats-section');
-            statsSection.style.display = 'block';
+            statsSection.hidden = false;
             statsSection.classList.add('fade-in');
         }
         
@@ -605,7 +698,7 @@ async function loadWordCloud(text) {
             `).join('');
             
             const wordcloudSection = document.getElementById('wordcloud-section');
-            wordcloudSection.style.display = 'block';
+            wordcloudSection.hidden = false;
             wordcloudSection.classList.add('fade-in');
         }
         
@@ -653,12 +746,12 @@ document.getElementById('history-search').addEventListener('keypress', (e) => {
 
 function toggleHistorySection() {
     const historySection = document.getElementById('history-section');
-    if (historySection.style.display === 'none') {
-        historySection.style.display = 'block';
+    const historyButton = document.getElementById('history-btn');
+    historySection.hidden = !historySection.hidden;
+    historyButton.setAttribute('aria-expanded', String(!historySection.hidden));
+    if (!historySection.hidden) {
         historySection.classList.add('fade-in');
         historySection.scrollIntoView({ behavior: 'smooth' });
-    } else {
-        historySection.style.display = 'none';
     }
 }
 
@@ -715,7 +808,7 @@ function displayHistory(analyses, stats, title = 'Historique récent') {
     }
     
     const analysesHtml = analyses.map(analysis => {
-        const date = new Date(analysis.created_at).toLocaleString('fr-FR');
+        const date = new Date(analysis.created_at).toLocaleString(uiDateLocale());
         const sentimentBadge = analysis.sentiment_label ? 
             `<span class="badge bg-${
                 analysis.sentiment_label === 'positive' ? 'success' : 
@@ -764,39 +857,32 @@ async function loadAnalysisDetails(analysisId) {
         if (data.success) {
             displayAnalysisModal(data.analysis);
         } else {
-            alert('Erreur: ' + data.error);
+            showUiMessage(uiT('status.error', {message:data.error}), 'danger');
         }
     } catch (err) {
         console.error('Erreur chargement détails:', err);
-        alert('Erreur de connexion');
+        showUiMessage('Erreur de connexion.', 'danger');
     }
 }
 
 function displayAnalysisModal(analysis) {
-    // Création d'une modal basique (vous pouvez améliorer avec Bootstrap modal)
+    const previousFocus = document.activeElement;
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
-    modal.style.cssText = `
-        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.8); z-index: 1000;
-        display: flex; align-items: center; justify-content: center;
-        padding: 20px;
-    `;
-    
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.tabIndex = -1;
+
     const content = document.createElement('div');
-    content.className = 'modal-content';
-    content.style.cssText = `
-        background: white; border-radius: 10px; padding: 20px;
-        max-width: 80%; max-height: 80%; overflow-y: auto;
-    `;
+    content.className = 'modal-content analysis-modal';
     
     const date = new Date(analysis.created_at).toLocaleString('fr-FR');
     
     content.innerHTML = `
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h4><i class="fas fa-chart-line"></i> Analyse du ${date}</h4>
-            <button class="btn btn-outline-secondary" onclick="this.closest('.modal-overlay').remove()">
-                <i class="fas fa-times"></i>
+            <h4 id="analysis-modal-title"><i class="fas fa-chart-line" aria-hidden="true"></i> Analyse du ${date}</h4>
+            <button class="btn btn-outline-secondary modal-close" type="button" aria-label="Fermer la fenêtre">
+                <i class="fas fa-times" aria-hidden="true"></i>
             </button>
         </div>
         
@@ -825,30 +911,66 @@ function displayAnalysisModal(analysis) {
         
         <div class="mt-3">
             <h6>Extrait du texte</h6>
-            <div class="border p-3 bg-light" style="max-height: 200px; overflow-y: auto;">
+            <div class="analysis-modal-excerpt border p-3 bg-light">
                 ${analysis.original_text.substring(0, 500)}${analysis.original_text.length > 500 ? '...' : ''}
             </div>
         </div>
         
         <div class="mt-3 text-end">
-            <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">
-                Fermer
-            </button>
+            <button class="btn btn-secondary modal-close" type="button">Fermer</button>
         </div>
     `;
     
+    modal.setAttribute('aria-labelledby', 'analysis-modal-title');
+
+    const closeModal = () => {
+        modal.remove();
+        if (previousFocus instanceof HTMLElement) {
+            previousFocus.focus();
+        }
+    };
+
     modal.appendChild(content);
     document.body.appendChild(modal);
-    
-    // Fermer avec Escape
+
+    const focusable = () => [...modal.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    )].filter(element => !element.disabled && !element.hidden);
+
+    modal.querySelectorAll('.modal-close').forEach(button => {
+        button.addEventListener('click', closeModal);
+    });
+
     modal.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') modal.remove();
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            closeModal();
+            return;
+        }
+        if (e.key === 'Tab') {
+            const elements = focusable();
+            if (elements.length === 0) {
+                e.preventDefault();
+                return;
+            }
+            const first = elements[0];
+            const last = elements[elements.length - 1];
+            if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+            }
+        }
     });
-    
-    // Fermer en cliquant sur le fond
+
     modal.addEventListener('click', (e) => {
-        if (e.target === modal) modal.remove();
+        if (e.target === modal) closeModal();
     });
+
+    const initialFocus = focusable()[0];
+    (initialFocus || modal).focus();
 }
 
 function displayAdvancedAnalysis(analysis) {
@@ -886,29 +1008,29 @@ function displaySentimentAnalysis(sentiment) {
                 <div class="p-3 border rounded">
                     <i class="fas fa-${sentimentIcon} fa-3x text-${sentimentColor} mb-2"></i>
                     <h5 class="text-${sentimentColor}">${sentiment.label.toUpperCase()}</h5>
-                    <small>Confiance: ${Math.round(sentiment.confidence * 100)}%</small>
+                    <small>${uiT('sentiment.confidence')}: ${Math.round(sentiment.confidence * 100)}%</small>
                 </div>
             </div>
             <div class="col-md-8">
                 <div class="mb-3">
-                    <label>Polarité: <strong>${sentiment.polarity}</strong></label>
+                    <label>${uiT('sentiment.polarity')}: <strong>${sentiment.polarity}</strong></label>
                     <div class="progress">
                         <div class="progress-bar bg-${sentimentColor}" style="width: ${Math.abs(sentiment.polarity) * 50 + 50}%"></div>
                     </div>
-                    <small class="text-muted">-1 (très négatif) à +1 (très positif)</small>
+                    <small class="text-muted">${uiT('sentiment.polarityHelp')}</small>
                 </div>
                 <div class="mb-3">
-                    <label>Subjectivité: <strong>${sentiment.subjectivity}</strong></label>
+                    <label>${uiT('sentiment.subjectivity')}: <strong>${sentiment.subjectivity}</strong></label>
                     <div class="progress">
                         <div class="progress-bar bg-info" style="width: ${sentiment.subjectivity * 100}%"></div>
                     </div>
-                    <small class="text-muted">0 (objectif) à 1 (subjectif)</small>
+                    <small class="text-muted">${uiT('sentiment.subjectivityHelp')}</small>
                 </div>
             </div>
         </div>
     `;
     
-    sentimentSection.style.display = 'block';
+    sentimentSection.hidden = false;
     sentimentSection.classList.add('fade-in');
 }
 
@@ -925,9 +1047,9 @@ function displayReadabilityAnalysis(readability) {
             <div class="col-md-6">
                 <div class="card">
                     <div class="card-body text-center">
-                        <h5 class="card-title">Niveau de Lisibilité</h5>
+                        <h5 class="card-title">${uiT('readability.level')}</h5>
                         <h3 class="text-${easeColor}">${readability.ease_level}</h3>
-                        <p class="card-text">Score Flesch: <strong>${readability.flesch_ease}</strong></p>
+                        <p class="card-text">${uiT('readability.flesch')}: <strong>${readability.flesch_ease}</strong></p>
                         <div class="progress">
                             <div class="progress-bar bg-${easeColor}" style="width: ${Math.max(0, readability.flesch_ease)}%"></div>
                         </div>
@@ -935,22 +1057,22 @@ function displayReadabilityAnalysis(readability) {
                 </div>
             </div>
             <div class="col-md-6">
-                <h6>Métriques détaillées</h6>
+                <h6>${uiT('readability.details')}</h6>
                 <ul class="list-group list-group-flush">
                     <li class="list-group-item d-flex justify-content-between">
-                        <span>Niveau scolaire Flesch-Kincaid</span>
+                        <span>${uiT('readability.grade')}</span>
                         <strong>${readability.flesch_kincaid}</strong>
                     </li>
                     <li class="list-group-item d-flex justify-content-between">
-                        <span>Mots par phrase (moyenne)</span>
+                        <span>${uiT('readability.wordsSentence')}</span>
                         <strong>${readability.avg_sentence_length}</strong>
                     </li>
                     <li class="list-group-item d-flex justify-content-between">
-                        <span>Syllabes par mot (moyenne)</span>
+                        <span>${uiT('readability.syllablesWord')}</span>
                         <strong>${readability.avg_syllables_per_word}</strong>
                     </li>
                     <li class="list-group-item d-flex justify-content-between">
-                        <span>Complexité lexicale</span>
+                        <span>${uiT('readability.lexical')}</span>
                         <strong>${readability.lexical_complexity}%</strong>
                     </li>
                 </ul>
@@ -958,115 +1080,54 @@ function displayReadabilityAnalysis(readability) {
         </div>
     `;
     
-    readabilitySection.style.display = 'block';
+    readabilitySection.hidden = false;
     readabilitySection.classList.add('fade-in');
 }
 
-function displayEmotionsAnalysis(emotions) {
+function displayEmotionsAnalysis(data) {
     const emotionsSection = document.getElementById('emotions-section');
     const emotionsContent = document.getElementById('emotions-content');
-    
-    if (!emotions || Object.keys(emotions).length === 0) {
-        emotionsContent.innerHTML = '<p class="text-muted">Aucune donnée émotionnelle détectée.</p>';
-        emotionsSection.style.display = 'block';
-        return;
-    }
-    
-    // Convertir les émotions en tableau trié par intensité
-    const emotionList = Object.entries(emotions)
-        .map(([emotion, score]) => ({ emotion, score }))
+
+    const distribution = data?.emotions || {};
+    const emotionList = Object.entries(distribution)
+        .filter(([, score]) => Number.isFinite(Number(score)))
+        .map(([emotion, score]) => ({ emotion, score: Number(score) }))
         .sort((a, b) => b.score - a.score);
-    
-    const emotionColors = {
-        'joy': 'success',
-        'happiness': 'success', 
-        'anger': 'danger',
-        'sadness': 'primary',
-        'fear': 'warning',
-        'surprise': 'info',
-        'disgust': 'secondary',
-        'anticipation': 'info',
-        'trust': 'success',
-        'positive': 'success',
-        'negative': 'danger',
-        'neutral': 'secondary'
-    };
-    
-    const emotionIcons = {
-        'joy': 'laugh',
-        'happiness': 'smile',
-        'anger': 'angry',
-        'sadness': 'sad-tear', 
-        'fear': 'frown',
-        'surprise': 'surprise',
-        'disgust': 'meh',
-        'anticipation': 'clock',
-        'trust': 'heart',
-        'positive': 'thumbs-up',
-        'negative': 'thumbs-down',
-        'neutral': 'meh'
-    };
-    
-    let emotionsHtml = '<div class="row">';
-    
-    emotionList.forEach((item, index) => {
-        const color = emotionColors[item.emotion.toLowerCase()] || 'secondary';
-        const icon = emotionIcons[item.emotion.toLowerCase()] || 'circle';
-        const percentage = Math.round(item.score * 100);
-        
-        if (index % 3 === 0 && index > 0) {
-            emotionsHtml += '</div><div class="row mt-3">';
-        }
-        
-        emotionsHtml += `
-            <div class="col-md-4 mb-3">
-                <div class="card text-center">
-                    <div class="card-body">
-                        <i class="fas fa-${icon} fa-2x text-${color} mb-2"></i>
-                        <h6 class="card-title text-capitalize">${item.emotion}</h6>
-                        <div class="progress">
-                            <div class="progress-bar bg-${color}" style="width: ${percentage}%"></div>
-                        </div>
-                        <small class="text-muted">${percentage}%</small>
-                    </div>
-                </div>
+
+    if (emotionList.length === 0) {
+        emotionsContent.innerHTML = `
+            <div class="emotion-summary">
+                <div><span class="text-muted">${uiT('emotions.dominant')}</span><strong>${uiT('emotions.none')}</strong></div>
+                <div><span class="text-muted">${uiT('emotions.words')}</span><strong>${data?.total_emotion_words ?? 0}</strong></div>
+                <div><span class="text-muted">${uiT('emotions.intensity')}</span><strong>${Number(data?.emotional_intensity || 0).toFixed(1)}%</strong></div>
             </div>
         `;
-    });
-    
-    emotionsHtml += '</div>';
-    
-    // Ajouter un graphique en barres pour les principales émotions
-    if (emotionList.length > 0) {
-        const topEmotions = emotionList.slice(0, 5);
-        emotionsHtml += `
-            <div class="mt-4">
-                <h6>Top 5 des émotions détectées</h6>
-                <div class="emotion-bars">
-        `;
-        
-        topEmotions.forEach(item => {
-            const color = emotionColors[item.emotion.toLowerCase()] || 'secondary';
-            const percentage = Math.round(item.score * 100);
-            
-            emotionsHtml += `
-                <div class="mb-2">
-                    <div class="d-flex justify-content-between">
+        emotionsSection.hidden = false;
+        return;
+    }
+
+    emotionsContent.innerHTML = `
+        <div class="emotion-summary">
+            <div><span class="text-muted">${uiT('emotions.dominant')}</span><strong class="text-capitalize">${data.dominant_emotion || uiT('emotions.none')}</strong></div>
+            <div><span class="text-muted">Mots émotionnels</span><strong>${data.total_emotion_words ?? 0}</strong></div>
+            <div><span class="text-muted">Intensité émotionnelle</span><strong>${Number(data.emotional_intensity || 0).toFixed(1)}%</strong></div>
+        </div>
+        <div class="emotion-bars mt-3">
+            ${emotionList.map(item => `
+                <div class="emotion-row">
+                    <div class="d-flex justify-content-between gap-3">
                         <span class="text-capitalize">${item.emotion}</span>
-                        <span>${percentage}%</span>
+                        <strong>${item.score.toFixed(1)}%</strong>
                     </div>
-                    <div class="progress">
-                        <div class="progress-bar bg-${color}" style="width: ${percentage}%"></div>
+                    <div class="progress" role="progressbar" aria-label="${item.emotion}" aria-valuenow="${item.score}" aria-valuemin="0" aria-valuemax="100">
+                        <div class="progress-bar" style="width: ${Math.min(100, Math.max(0, item.score))}%"></div>
                     </div>
                 </div>
-            `;
-        });
-        
-        emotionsHtml += '</div></div>';
-    }
-    
-    emotionsContent.innerHTML = emotionsHtml;
-    emotionsSection.style.display = 'block';
+            `).join('')}
+        </div>
+    `;
+
+    emotionsSection.hidden = false;
     emotionsSection.classList.add('fade-in');
 }
 

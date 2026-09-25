@@ -164,7 +164,84 @@ def test_text_tools_have_meaningful_results(client):
     cloud = client.post("/wordcloud", json={"text": text, "max_words": 1}).json
     assert cloud["wordcloud_data"][0]["word"] == "robot"
     assert cloud["wordcloud_data"][0]["count"] == 2
-    text = "Robot robot robot science. " + "Un jardin propose des fleurs et des arbres dans la nature. " * 2
+    text = (
+        "Robot robot robot science. "
+        + "Un jardin propose des fleurs et des arbres dans la nature. " * 2
+    )
     response = client.post("/summary", json={"text": text, "num_sentences": 1})
     assert response.json["success"] is True
     assert response.json["summary_length"] < response.json["original_length"]
+
+
+def test_modern_ui_stylesheet_is_packaged(client):
+    page = client.get("/")
+    assert page.status_code == 200
+    assert b'href="/static/modern.css"' in page.data
+    with client.get("/static/modern.css") as stylesheet:
+        assert stylesheet.status_code == 200
+        assert b"prefers-reduced-motion" in stylesheet.data
+
+
+@pytest.mark.parametrize("url", ["/", "/dashboard"])
+def test_workspace_theme_and_accessible_navigation(client, url):
+    response = client.get(url)
+    assert response.status_code == 200
+    for expected in (
+        b'data-bs-theme="dark"',
+        b'id="theme-toggle"',
+        b'href="#main-content"',
+        b'id="main-content"',
+        b"/static/modern.css",
+        b"/static/theme.js",
+    ):
+        assert expected in response.data
+
+
+def test_theme_script_is_packaged(client):
+    with client.get("/static/theme.js") as response:
+        assert response.status_code == 200
+        assert b"yt-transcript-theme" in response.data
+
+
+def test_saved_transcript_lifecycle(client, monkeypatch):
+    class YouTube:
+        def fetch(self, video_id, languages):
+            return [SimpleNamespace(text="Une transcription disponible pour consultation.")]
+
+    monkeypatch.setattr("yt_transcript.web.YouTubeTranscriptApi", YouTube)
+    video_id = "dQw4w9WgXcQ"
+    assert client.get("/transcripts").json["transcripts"] == []
+    fetched = client.post("/transcribe", json={"video_id": video_id})
+    assert fetched.status_code == 200
+    history = client.get("/transcripts").json["transcripts"]
+    assert len(history) == 1
+    assert history[0]["video_id"] == video_id
+    assert "transcript" not in history[0]
+    saved = client.get(f"/transcripts/{video_id}")
+    assert saved.json["transcript"] == fetched.json["transcript"]
+    assert client.delete(f"/transcripts/{video_id}").json["success"] is True
+    assert client.get(f"/transcripts/{video_id}").status_code == 404
+
+
+def test_repeat_fetch_updates_single_transcript(client, monkeypatch):
+    class YouTube:
+        def fetch(self, video_id, languages):
+            return [SimpleNamespace(text="Transcription mise à jour")]
+
+    monkeypatch.setattr("yt_transcript.web.YouTubeTranscriptApi", YouTube)
+    for _ in range(2):
+        assert client.post("/transcribe", json={"video_id": "dQw4w9WgXcQ"}).status_code == 200
+    assert len(client.get("/transcripts").json["transcripts"]) == 1
+
+
+def test_transcript_history_is_isolated_between_apps(client, tmp_path):
+    from yt_transcript import create_app
+
+    assert client.get("/transcripts").json["transcripts"] == []
+    second = create_app(
+        {"TESTING": True, "DATA_DIR": tmp_path / "second-history", "SECRET_KEY": "other"}
+    )
+    try:
+        assert second.test_client().get("/transcripts").json["transcripts"] == []
+    finally:
+        second.extensions["database_engine"].dispose()

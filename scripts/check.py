@@ -11,7 +11,7 @@ def main() -> int:
         ["ruff", "check", "."],
         ["ruff", "format", "--check", "."],
         ["mypy"],
-        ["pytest", "--cov", "--cov-report=term-missing"],
+        ["pytest", "--cov", "--cov-branch", "--cov-report=term-missing", "--cov-fail-under=100"],
     ):
         result = subprocess.run([sys.executable, "-m", *arguments], cwd=root, check=False)
         if result.returncode:

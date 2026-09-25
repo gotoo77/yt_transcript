@@ -61,7 +61,12 @@ def start(directory: Path, host: str, port: int) -> int:
             str(port),
         ]
         instance = uuid4().hex
-        environment = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUNBUFFERED="1", YT_TRANSCRIPT_INSTANCE_ID=instance)
+        environment = dict(
+            os.environ,
+            PYTHONIOENCODING="utf-8",
+            PYTHONUNBUFFERED="1",
+            YT_TRANSCRIPT_INSTANCE_ID=instance,
+        )
         with (directory / "server.log").open("ab") as log:
             child = subprocess.Popen(
                 command,
@@ -69,7 +74,10 @@ def start(directory: Path, host: str, port: int) -> int:
                 stdout=log,
                 stderr=log,
                 env=environment,
-                creationflags=(subprocess.CREATE_NO_WINDOW | subprocess.CREATE_NEW_PROCESS_GROUP)
+                creationflags=(
+                    getattr(subprocess, "CREATE_NO_WINDOW", 0)
+                    | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+                )
                 if os.name == "nt"
                 else 0,
                 start_new_session=os.name != "nt",

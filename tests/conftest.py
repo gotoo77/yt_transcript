@@ -18,7 +18,9 @@ def isolated_environment(tmp_path, monkeypatch):
 
 @pytest.fixture
 def app(tmp_path):
-    application = create_app({"TESTING": True, "DATA_DIR": tmp_path, "DATABASE_URL": None, "SECRET_KEY": "test-secret"})
+    application = create_app(
+        {"TESTING": True, "DATA_DIR": tmp_path, "DATABASE_URL": None, "SECRET_KEY": "test-secret"}
+    )
     yield application
     application.extensions["database_engine"].dispose()
 

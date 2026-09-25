@@ -281,49 +281,46 @@ class ReportExportService:
             )
             return elements
 
-        # Résumé des tendances
-        daily_analyses = trends.get("daily_analyses", [])
-        if daily_analyses:
-            total_days = len(daily_analyses)
-            total_analyses = sum(day["count"] for day in daily_analyses)
-            avg_per_day = total_analyses / total_days if total_days > 0 else 0
+        # daily_analyses is guaranteed non-empty by the guard above.
+        daily_analyses = trends["daily_analyses"]
+        total_days = len(daily_analyses)
+        total_analyses = sum(day["count"] for day in daily_analyses)
+        avg_per_day = total_analyses / total_days
+        max_day = max(daily_analyses, key=lambda x: x["count"])
 
-            max_day: dict[str, Any] = max(daily_analyses, key=lambda x: x["count"], default={})
+        summary_text = f"""
+        Résumé des tendances sur {total_days} jours:
+        • Total analyses: {total_analyses}
+        • Moyenne par jour: {avg_per_day:.1f}
+        • Jour le plus actif: {max_day.get("date", "N/A")} ({max_day.get("count", 0)} analyses)
+        """
 
-            summary_text = f"""
-            Résumé des tendances sur {total_days} jours:
-            • Total analyses: {total_analyses}
-            • Moyenne par jour: {avg_per_day:.1f}
-            • Jour le plus actif: {max_day.get("date", "N/A")} ({max_day.get("count", 0)} analyses)
-            """
-
-            elements.append(Paragraph(summary_text, self.styles["Normal"]))
-            elements.append(Spacer(1, 12))
+        elements.append(Paragraph(summary_text, self.styles["Normal"]))
+        elements.append(Spacer(1, 12))
 
         # Tableau des analyses quotidiennes (derniers 10 jours)
-        if daily_analyses:
-            recent_data = [["Date", "Analyses"]]
-            for day in daily_analyses[-10:]:  # 10 derniers jours
-                date_str = datetime.fromisoformat(day["date"]).strftime("%d/%m/%Y")
-                recent_data.append([date_str, str(day["count"])])
+        recent_data = [["Date", "Analyses"]]
+        for day in daily_analyses[-10:]:  # 10 derniers jours
+            date_str = datetime.fromisoformat(day["date"]).strftime("%d/%m/%Y")
+            recent_data.append([date_str, str(day["count"])])
 
-            trend_table = Table(recent_data, colWidths=[1.5 * inch, 1 * inch])
-            trend_table.setStyle(
-                TableStyle(
-                    [
-                        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#764ba2")),
-                        ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
-                        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-                        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                        ("GRID", (0, 0), (-1, -1), 1, colors.black),
-                        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.lightpink]),
-                    ]
-                )
+        trend_table = Table(recent_data, colWidths=[1.5 * inch, 1 * inch])
+        trend_table.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#764ba2")),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("GRID", (0, 0), (-1, -1), 1, colors.black),
+                    ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.lightpink]),
+                ]
             )
+        )
 
-            elements.append(Paragraph("Activité des 10 derniers jours:", self.styles["Normal"]))
-            elements.append(trend_table)
-            elements.append(Spacer(1, 20))
+        elements.append(Paragraph("Activité des 10 derniers jours:", self.styles["Normal"]))
+        elements.append(trend_table)
+        elements.append(Spacer(1, 20))
 
         return elements
 

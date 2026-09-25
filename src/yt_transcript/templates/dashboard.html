@@ -1,286 +1,66 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>📊 Dashboard Analytics - YouTube Transcript Analyzer</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/date-fns@3.3.1/index.min.js"></script>
-    <style>
-        body { 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        .navbar {
-            background: rgba(255,255,255,0.95) !important;
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(0,0,0,0.1);
-            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
-        }
-        
-        .main-container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
-            margin: 2rem auto;
-            padding: 0;
-            overflow: hidden;
-            max-width: 1400px;
-        }
-        
-        .dashboard-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 2rem;
-            text-align: center;
-        }
-        
-        .kpi-card {
-            background: white;
-            border-radius: 15px;
-            padding: 1.5rem;
-            margin: 1rem 0;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-            border: 1px solid rgba(0,0,0,0.05);
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .kpi-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
-        }
-        
-        .kpi-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, #667eea, #764ba2);
-        }
-        
-        .kpi-value {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: #2c3e50;
-            margin-bottom: 0.5rem;
-        }
-        
-        .kpi-label {
-            color: #7f8c8d;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 0.5rem;
-        }
-        
-        .kpi-description {
-            color: #95a5a6;
-            font-size: 0.8rem;
-        }
-        
-        .chart-container {
-            background: white;
-            border-radius: 15px;
-            padding: 1.5rem;
-            margin: 1rem 0;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-            border: 1px solid rgba(0,0,0,0.05);
-        }
-        
-        .chart-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .period-selector {
-            background: rgba(255,255,255,0.9);
-            border-radius: 10px;
-            padding: 0.5rem;
-            margin: 1rem 0;
-            display: flex;
-            gap: 0.5rem;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-        
-        .period-btn {
-            border: none;
-            background: transparent;
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            transition: all 0.3s ease;
-            color: #667eea;
-            font-weight: 500;
-        }
-        
-        .period-btn.active,
-        .period-btn:hover {
-            background: #667eea;
-            color: white;
-            transform: translateY(-2px);
-        }
-        
-        .loading-spinner {
-            text-align: center;
-            padding: 2rem;
-            color: #7f8c8d;
-        }
-        
-        .loading-spinner i {
-            font-size: 2rem;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .insights-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1rem;
-            margin: 1rem 0;
-        }
-        
-        .insight-card {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border-radius: 15px;
-            padding: 1.5rem;
-            border-left: 4px solid #667eea;
-        }
-        
-        .insight-title {
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 1rem;
-        }
-        
-        .metric-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin: 0.5rem 0;
-            padding: 0.5rem 0;
-            border-bottom: 1px solid rgba(0,0,0,0.1);
-        }
-        
-        .metric-row:last-child {
-            border-bottom: none;
-        }
-        
-        .auto-refresh {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: rgba(255,255,255,0.9);
-            padding: 0.5rem 1rem;
-            border-radius: 25px;
-            border: 1px solid rgba(0,0,0,0.1);
-            font-size: 0.8rem;
-            color: #667eea;
-            z-index: 1000;
-        }
-        
-        .status-indicator {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 0.5rem;
-            background: #28a745;
-        }
-        
-        .section-divider {
-            height: 2px;
-            background: linear-gradient(90deg, transparent, #667eea, transparent);
-            margin: 2rem 0;
-            border-radius: 2px;
-        }
-        
-        @media (max-width: 768px) {
-            .main-container {
-                margin: 1rem;
-                border-radius: 10px;
-            }
-            
-            .dashboard-header {
-                padding: 1rem;
-            }
-            
-            .kpi-value {
-                font-size: 2rem;
-            }
-            
-            .insights-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="/static/modern.css">
 </head>
-<body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg">
-        <div class="container">
-            <a class="navbar-brand" href="/">
-                <i class="fab fa-youtube text-danger"></i>
-                <strong>Transcript Analyzer</strong>
-            </a>
-            
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="/">
-                    <i class="fas fa-home"></i> Accueil
-                </a>
-                <a class="nav-link active" href="/dashboard">
-                    <i class="fas fa-chart-line"></i> Dashboard
-                </a>
-                <a class="nav-link" href="/api/docs" target="_blank">
-                    <i class="fas fa-code"></i> API
-                </a>
-            </div>
-        </div>
+<body data-i18n-title="dashboard.title">
+<a class="skip-link" href="#main-content" data-i18n="skip.main">Aller au contenu principal</a>
+<div class="workspace">
+  <aside class="workspace-sidebar" aria-label="Navigation de l'application" data-i18n-aria-label="nav.app">
+    <a class="brand" href="/">▶ Transcript Studio</a>
+    <nav class="workspace-nav" aria-label="Navigation principale" data-i18n-aria-label="nav.label">
+      <a href="/" data-i18n="nav.analysis">Transcription et analyse</a>
+      <a href="/dashboard" aria-current="page" data-i18n="nav.dashboard">Tableau de bord</a>
+      <a href="/api/docs/" target="_blank" rel="noopener noreferrer"><span data-i18n="nav.api">Documentation API</span> <span class="visually-hidden" data-i18n="nav.newTab">(nouvel onglet)</span></a>
     </nav>
-
+  </aside>
+  <main id="main-content" class="workspace-main">
+    <header class="workspace-topbar">
+      <p data-i18n="top.dashboard">Historique et visualisations</p>
+      <div class="topbar-actions">
+        <div class="language-switcher" role="group" aria-label="Langue de l’interface" data-i18n-aria-label="language.group">
+          <button type="button" data-locale="fr" aria-pressed="false">🇫🇷 FR</button>
+          <button type="button" data-locale="en" aria-pressed="false">🇬🇧 EN</button>
+        </div>
+        <button class="theme-toggle" type="button" id="theme-toggle" aria-label="Activer le thème clair" aria-pressed="false">☀ Thème clair</button>
+      </div>
+    </header>
     <!-- Auto-refresh indicator -->
-    <div class="auto-refresh" id="refresh-status">
-        <span class="status-indicator"></span>
-        <span id="refresh-text">Mise à jour automatique</span>
+    <div class="auto-refresh" id="refresh-status" role="status" aria-live="polite">
+        <span class="status-indicator" aria-hidden="true"></span>
+        <span id="refresh-text" data-i18n="dashboard.refreshAuto">Mise à jour automatique</span>
     </div>
 
     <!-- Main Container -->
     <div class="main-container">
         <!-- Header -->
-        <div class="dashboard-header">
-            <h1><i class="fas fa-chart-line"></i> Dashboard Analytics</h1>
-            <p class="mb-0">Métriques en temps réel de votre analyseur de transcriptions</p>
+        <div class="dashboard-header ui-hero">
+            <p class="ui-eyebrow">Analytics</p>
+            <h1><i class="fas fa-chart-line" aria-hidden="true"></i> <span data-i18n="dashboard.title">Tableau de bord</span></h1>
+            <p class="mb-0" data-i18n="dashboard.subtitle">Métriques et tendances de vos analyses de transcriptions</p>
             
             <!-- Period Selector -->
-            <div class="period-selector">
-                <button class="period-btn" data-period="7">7 jours</button>
-                <button class="period-btn active" data-period="30">30 jours</button>
-                <button class="period-btn" data-period="90">90 jours</button>
-                <button class="period-btn" data-period="365">1 an</button>
+            <div class="period-selector" role="group" aria-label="Période d'analyse" data-i18n-aria-label="dashboard.period">
+                <button class="period-btn" type="button" data-period="7">7 jours</button>
+                <button class="period-btn active" type="button" data-period="30" aria-pressed="true">30 jours</button>
+                <button class="period-btn" type="button" data-period="90">90 jours</button>
+                <button class="period-btn" type="button" data-period="365" data-i18n="dashboard.year">1 an</button>
             </div>
             
             <!-- Export Buttons -->
-            <div class="period-selector">
-                <button class="period-btn" onclick="exportReport('pdf')" style="background: #dc3545; color: white;">
-                    <i class="fas fa-file-pdf"></i> Export PDF
+            <div class="dashboard-actions" aria-label="Exports" data-i18n-aria-label="dashboard.exports">
+                <button class="export-btn export-btn-danger" type="button" data-export-format="pdf">
+                    <i class="fas fa-file-pdf" aria-hidden="true"></i> <span data-i18n="dashboard.exportPdf">Export PDF</span>
                 </button>
-                <button class="period-btn" onclick="exportReport('excel')" style="background: #28a745; color: white;">
-                    <i class="fas fa-file-excel"></i> Export Excel
+                <button class="export-btn export-btn-success" type="button" data-export-format="excel">
+                    <i class="fas fa-file-excel" aria-hidden="true"></i> <span data-i18n="dashboard.exportExcel">Export Excel</span>
                 </button>
             </div>
         </div>
@@ -289,42 +69,42 @@
         <div class="container-fluid p-4">
             
             <!-- Loading State -->
-            <div id="loading-state" class="loading-spinner">
+            <div id="loading-state" class="loading-spinner" role="status" aria-live="polite">
                 <i class="fas fa-spinner"></i>
-                <p>Chargement des données analytiques...</p>
+                <p data-i18n="dashboard.loading">Chargement des données analytiques...</p>
             </div>
 
             <!-- Dashboard Content (Hidden initially) -->
-            <div id="dashboard-content" style="display: none;">
+            <div id="dashboard-content" hidden>
                 
                 <!-- KPIs Section -->
                 <div class="row mb-4" id="kpis-section">
                     <div class="col-md-3">
                         <div class="kpi-card text-center">
-                            <div class="kpi-label">Total Analyses</div>
+                            <div class="kpi-label" data-i18n="dashboard.kpiAnalyses">Total Analyses</div>
                             <div class="kpi-value" id="total-analyses">-</div>
-                            <div class="kpi-description">Analyses effectuées</div>
+                            <div class="kpi-description" data-i18n="dashboard.kpiAnalysesDesc">Analyses effectuées</div>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="kpi-card text-center">
-                            <div class="kpi-label">Mots Analysés</div>
+                            <div class="kpi-label" data-i18n="dashboard.kpiWords">Mots Analysés</div>
                             <div class="kpi-value" id="total-words">-</div>
-                            <div class="kpi-description">Mots traités au total</div>
+                            <div class="kpi-description" data-i18n="dashboard.kpiWordsDesc">Mots traités au total</div>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="kpi-card text-center">
-                            <div class="kpi-label">Temps de Lecture</div>
+                            <div class="kpi-label" data-i18n="dashboard.kpiReading">Temps de Lecture</div>
                             <div class="kpi-value" id="total-reading-time">-</div>
-                            <div class="kpi-description">Heures de contenu</div>
+                            <div class="kpi-description" data-i18n="dashboard.kpiReadingDesc">Heures de contenu</div>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="kpi-card text-center">
-                            <div class="kpi-label">Complexité Moyenne</div>
+                            <div class="kpi-label" data-i18n="dashboard.kpiComplexity">Complexité Moyenne</div>
                             <div class="kpi-value" id="avg-complexity">-</div>
-                            <div class="kpi-description">Score de difficulté</div>
+                            <div class="kpi-description" data-i18n="dashboard.kpiComplexityDesc">Score de difficulté</div>
                         </div>
                     </div>
                 </div>
@@ -334,19 +114,21 @@
                 <!-- Charts Section -->
                 <div class="row">
                     <div class="col-lg-8">
-                        <div class="chart-container">
+                        <div class="chart-container chart-container-wide">
                             <div class="chart-title">
                                 <i class="fas fa-chart-area text-primary"></i>
-                                Évolution des Analyses
+                                <span data-i18n="dashboard.chartAnalyses">Évolution des Analyses</span>
                             </div>
-                            <canvas id="analysesChart" height="100"></canvas>
+                            <div class="chart-canvas-wide">
+                                <canvas id="analysesChart"></canvas>
+                            </div>
                         </div>
                     </div>
                     <div class="col-lg-4">
                         <div class="chart-container">
                             <div class="chart-title">
                                 <i class="fas fa-chart-pie text-success"></i>
-                                Modes d'Analyse
+                                <span data-i18n="dashboard.chartModes">Modes d'Analyse</span>
                             </div>
                             <canvas id="modesChart"></canvas>
                         </div>
@@ -358,7 +140,7 @@
                         <div class="chart-container">
                             <div class="chart-title">
                                 <i class="fas fa-heart text-danger"></i>
-                                Analyse de Sentiment
+                                <span data-i18n="dashboard.chartSentiment">Analyse de Sentiment</span>
                             </div>
                             <canvas id="sentimentChart"></canvas>
                         </div>
@@ -367,7 +149,7 @@
                         <div class="chart-container">
                             <div class="chart-title">
                                 <i class="fas fa-brain text-warning"></i>
-                                Distribution de Complexité
+                                <span data-i18n="dashboard.chartComplexity">Distribution de Complexité</span>
                             </div>
                             <canvas id="complexityChart"></canvas>
                         </div>
@@ -389,7 +171,7 @@
                         <div class="chart-container">
                             <div class="chart-title">
                                 <i class="fas fa-clock text-info"></i>
-                                Activité Hebdomadaire
+                                <span data-i18n="dashboard.chartWeekday">Activité Hebdomadaire</span>
                             </div>
                             <canvas id="weekdayChart"></canvas>
                         </div>
@@ -398,7 +180,7 @@
                         <div class="chart-container">
                             <div class="chart-title">
                                 <i class="fas fa-chart-bar text-secondary"></i>
-                                Répartition par Mots
+                                <span data-i18n="dashboard.chartWords">Répartition par Mots</span>
                             </div>
                             <canvas id="wordRangesChart"></canvas>
                         </div>
@@ -407,7 +189,7 @@
                         <div class="insight-card">
                             <div class="insight-title">
                                 <i class="fas fa-trophy text-warning"></i>
-                                Analyses Remarquables
+                                <span data-i18n="dashboard.top">Analyses Remarquables</span>
                             </div>
                             <div id="top-analyses">
                                 <!-- Top analyses will be populated here -->
@@ -417,10 +199,10 @@
                 </div>
 
                 <!-- Footer Info -->
-                <div class="text-center mt-4 mb-2">
+                <div class="dashboard-footer text-center mt-4 mb-2">
                     <small class="text-muted">
                         <i class="fas fa-sync-alt"></i>
-                        Dernière mise à jour: <span id="last-update">-</span>
+                        <span data-i18n="dashboard.lastUpdate">Dernière mise à jour :</span> <span id="last-update">-</span>
                     </small>
                 </div>
 
@@ -429,6 +211,10 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  </main>
+</div>
+    <script src="/static/i18n.js" defer></script>
+    <script src="/static/theme.js" defer></script>
     <script src="/static/dashboard.js"></script>
 </body>
 </html>

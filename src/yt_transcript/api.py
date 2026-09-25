@@ -223,17 +223,12 @@ def create_api_routes(app: Flask) -> Api:
                 if not ids_param:
                     abort(400, "Paramètre 'ids' requis (ex: ids=1,2,3)")
 
-                try:
-                    analysis_ids = [
-                        int(x.strip()) for x in ids_param.split(",") if x.strip().isdigit()
-                    ]
-                except ValueError:
+                id_tokens = [token.strip() for token in ids_param.split(",")]
+                if any(not token.isdigit() for token in id_tokens):
                     abort(
                         400, "Format 'ids' invalide - utilisez des entiers séparés par des virgules"
                     )
-
-                if not analysis_ids:
-                    abort(400, "Aucun ID valide fourni")
+                analysis_ids = [int(token) for token in id_tokens]
 
                 if len(analysis_ids) > 50:
                     abort(400, "Maximum 50 analyses par export CSV")
