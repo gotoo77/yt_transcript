@@ -1,7 +1,7 @@
 """Focused branch coverage for application configuration."""
 
-from flask import Flask
 import pytest
+from flask import Flask
 
 import yt_transcript.config as config_module
 from yt_transcript.config import configure_app, data_directory
