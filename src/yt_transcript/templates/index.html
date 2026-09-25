@@ -366,13 +366,13 @@ Vous pouvez aussi coller manuellement du texte à analyser."></textarea>
         <!-- Section Graphiques -->
         <div id="charts-section" class="mb-4" style="display: none;">
             <div class="row">
-                <div class="col-lg-8">
+                <div class="col-lg-8" id="frequency-chart-panel">
                     <div class="chart-container">
                         <canvas id="frequency-chart"></canvas>
                     </div>
                 </div>
-                <div class="col-lg-4">
-                    <div class="chart-container">
+                <div class="col-lg-4" id="concepts-chart-panel">
+                    <div class="chart-container chart-container-compact">
                         <canvas id="concepts-chart"></canvas>
                     </div>
                 </div>
@@ -457,7 +457,7 @@ Vous pouvez aussi coller manuellement du texte à analyser."></textarea>
         </div>
 
         <!-- Section Résultats d'analyse (existante) -->
-        <div id="analysis-results" class="alert alert-light border mt-4" style="display: none;"></div>
+        <div id="analysis-results" class="analysis-results-panel mt-4" style="display: none;"></div>
     </div>
 
   </main>
