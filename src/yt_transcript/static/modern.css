@@ -209,3 +209,94 @@ textarea#transcript-textarea { min-height:280px; line-height:1.6; font-family:ui
  width:100% !important;
  height:100% !important;
 }
+
+
+/* Main analysis v2: compact, dark-native result surfaces. */
+.analysis-results-panel {
+ padding:1rem;
+ background:var(--ui-panel);
+ color:var(--ui-ink);
+ border:1px solid var(--ui-line);
+ border-radius:var(--ui-radius-md);
+}
+.stat-tile {
+ height:100%;
+ padding:1rem;
+ text-align:center;
+ background:var(--ui-surface);
+ border:1px solid var(--ui-line);
+ border-radius:var(--ui-radius-sm);
+}
+.stat-tile h4 { font-size:clamp(1.2rem,2vw,1.55rem); }
+.concept-grid {
+ display:grid;
+ grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));
+ gap:.8rem;
+ margin-top:1rem;
+}
+.concept-category {
+ min-height:0;
+ padding:1rem;
+ background:var(--ui-surface) !important;
+ border:1px solid var(--ui-line);
+ border-left:3px solid var(--ui-accent);
+ border-radius:var(--ui-radius-sm);
+ transition:border-color .15s ease;
+}
+.concept-category:hover {
+ transform:none;
+ box-shadow:none;
+ border-color:var(--ui-accent);
+}
+.concept-heading {
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ gap:.75rem;
+ margin-bottom:.45rem;
+}
+.concept-score { margin:0 0 .55rem; color:var(--ui-muted); }
+.concept-keywords { display:flex; flex-wrap:wrap; gap:.3rem; }
+.concept-keywords .badge { margin:0 !important; }
+.chart-container-compact {
+ min-height:0;
+ height:clamp(240px,28vw,340px);
+}
+.emotion-summary {
+ display:grid;
+ grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:.75rem;
+}
+.emotion-summary > div {
+ display:grid;
+ gap:.2rem;
+ padding:.8rem 1rem;
+ background:var(--ui-surface);
+ border:1px solid var(--ui-line);
+ border-radius:var(--ui-radius-sm);
+}
+.emotion-summary strong { font-size:1.05rem; }
+.emotion-row { margin:.65rem 0; }
+.emotion-row .progress { height:.55rem; background:var(--ui-surface); }
+.emotion-row .progress-bar { background:var(--ui-accent); }
+#stats-section .stats-card,
+#sentiment-section .card,
+#emotions-section .card,
+#readability-section .card,
+#transcript-history,
+#history-section .card {
+ padding:0;
+ overflow:hidden;
+}
+#sentiment-section .card-body,
+#emotions-section .card-body,
+#readability-section .card-body,
+#transcript-history .card-body,
+#history-section .card-body { padding:1rem; }
+#charts-section .row { --bs-gutter-y:1rem; }
+#frequency-chart-panel[hidden],
+#concepts-chart-panel[hidden] { display:none !important; }
+@media(max-width:700px) {
+ .emotion-summary { grid-template-columns:1fr; }
+ .concept-grid { grid-template-columns:1fr; }
+}
