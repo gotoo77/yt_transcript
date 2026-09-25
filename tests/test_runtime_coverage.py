@@ -43,7 +43,9 @@ def test_managed_process_rejects_non_server_command(tmp_path, monkeypatch):
         "command": ["python", "-m", "yt_transcript", "info"],
     }
     (tmp_path / "server.json").write_text(json.dumps(state), encoding="utf-8")
-    monkeypatch.setattr(runtime.psutil, "Process", lambda pid: FakeProcess(command=state["command"]))
+    monkeypatch.setattr(
+        runtime.psutil, "Process", lambda pid: FakeProcess(command=state["command"])
+    )
     assert runtime.managed_process(tmp_path) is None
 
 
@@ -72,7 +74,11 @@ def test_start_cleans_up_when_child_exits_before_ready(tmp_path, monkeypatch):
     )
 
     monkeypatch.setattr(runtime, "managed_process", lambda directory: None)
-    monkeypatch.setattr(runtime.socket, "create_connection", lambda *args, **kwargs: (_ for _ in ()).throw(OSError()))
+    monkeypatch.setattr(
+        runtime.socket,
+        "create_connection",
+        lambda *args, **kwargs: (_ for _ in ()).throw(OSError()),
+    )
     monkeypatch.setattr(runtime.subprocess, "Popen", lambda *args, **kwargs: child)
     monkeypatch.setattr(runtime.psutil, "Process", lambda pid: FakeProcess(pid=pid))
 
@@ -101,7 +107,11 @@ def test_start_timeout_terminates_child_and_removes_state(tmp_path, monkeypatch)
     ticks = iter([0.0, 31.0, 31.0])
 
     monkeypatch.setattr(runtime, "managed_process", lambda directory: None)
-    monkeypatch.setattr(runtime.socket, "create_connection", lambda *args, **kwargs: (_ for _ in ()).throw(OSError()))
+    monkeypatch.setattr(
+        runtime.socket,
+        "create_connection",
+        lambda *args, **kwargs: (_ for _ in ()).throw(OSError()),
+    )
     monkeypatch.setattr(runtime.subprocess, "Popen", lambda *args, **kwargs: Child())
     monkeypatch.setattr(runtime.psutil, "Process", lambda pid: FakeProcess(pid=pid))
     monkeypatch.setattr(runtime.time, "monotonic", lambda: next(ticks))
