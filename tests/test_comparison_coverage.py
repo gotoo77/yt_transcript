@@ -179,3 +179,45 @@ def test_compare_analyses_backend_exception_is_reported(monkeypatch):
     result = ComparisonService().compare_analyses([1, 2])
     assert "error" in result
     assert "simulated lookup failure" in result["error"]
+
+
+def test_compare_content_single_analysis_skips_pairwise_similarity():
+    row = analysis(word_frequency={"robot": 2}, concepts_detected=["technology"])
+    result = ComparisonService()._compare_content([row])
+    assert result["mode_distribution"] == {"style": 1}
+    assert result["content_similarity"] == []
+
+
+def test_readability_comparison_without_ease_scores_has_no_statistics():
+    rows = [
+        analysis(flesch_reading_ease=None, flesch_kincaid_grade=8.0),
+        analysis(id=2, flesch_reading_ease=None, flesch_kincaid_grade=None),
+    ]
+    result = ComparisonService()._compare_readability(rows)
+    assert result["statistics"] == {}
+
+
+def test_similarity_failure_returns_zero():
+    class Broken:
+        @property
+        def vocabulary_richness(self):
+            raise RuntimeError("simulated similarity failure")
+
+    assert ComparisonService()._calculate_content_similarity(Broken(), Broken()) == 0.0
+
+
+def test_differential_insights_empty_input_covers_empty_metric_paths():
+    result = ComparisonService()._generate_differential_insights([])
+    assert result["key_differences"] == []
+    assert result["patterns"] == ["Modes d'analyse variés utilisés"]
+    assert result["recommendations"] == []
+
+
+def test_differential_insights_handles_internal_failure():
+    class Broken:
+        @property
+        def total_words(self):
+            raise RuntimeError("simulated insight failure")
+
+    result = ComparisonService()._generate_differential_insights([Broken()])
+    assert result == {"key_differences": [], "patterns": [], "recommendations": []}
