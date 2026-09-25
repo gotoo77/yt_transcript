@@ -182,3 +182,42 @@ def test_comprehensive_dashboard_contains_all_sections(monkeypatch):
     assert result["kpis"] == {"days": 14}
     assert result["trends"] == {"days": 14}
     assert result["insights"] == {"limit": 200}
+
+
+def test_temporal_trends_skip_empty_optional_metric_series(monkeypatch):
+    now = datetime.now()
+    rows = [
+        record(
+            id=1,
+            created_at=now,
+            total_words=50,
+            complexity_score=None,
+            sentiment_polarity=None,
+            reading_time_minutes=None,
+        )
+    ]
+    monkeypatch.setattr(
+        "yt_transcript.dashboard_service.get_recent_analyses",
+        lambda limit: rows,
+    )
+
+    result = DashboardService().get_temporal_trends(days=30)
+    assert result is not None
+    assert result["daily_analyses"][0]["count"] == 1
+    assert result["complexity_trend"] == []
+    assert result["sentiment_trend"] == []
+    assert result["reading_time_trend"] == []
+
+
+def test_top_analyses_empty_input_returns_empty_dict():
+    assert DashboardService()._get_top_analyses([]) == {}
+
+
+def test_comprehensive_dashboard_failure_returns_none(monkeypatch):
+    service = DashboardService()
+
+    def fail(_days):
+        raise RuntimeError("simulated comprehensive dashboard failure")
+
+    monkeypatch.setattr(service, "get_global_kpis", fail)
+    assert service.generate_comprehensive_dashboard(days=7) is None
