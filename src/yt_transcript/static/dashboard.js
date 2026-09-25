@@ -17,9 +17,15 @@ class DashboardManager {
 
     initializeEventListeners() {
         // Period selector buttons
-        document.querySelectorAll('.period-btn').forEach(btn => {
+        document.querySelectorAll('[data-period]').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 this.changePeriod(parseInt(e.target.dataset.period));
+            });
+        });
+
+        document.querySelectorAll('[data-export-format]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.exportReport(btn.dataset.exportFormat, btn);
             });
         });
 
@@ -38,10 +44,11 @@ class DashboardManager {
         this.currentPeriod = days;
         
         // Update UI
-        document.querySelectorAll('.period-btn').forEach(btn => {
-            btn.classList.remove('active');
+        document.querySelectorAll('[data-period]').forEach(btn => {
+            const active = Number(btn.dataset.period) === days;
+            btn.classList.toggle('active', active);
+            btn.setAttribute('aria-pressed', String(active));
         });
-        document.querySelector(`[data-period="${days}"]`).classList.add('active');
         
         // Reload data
         this.loadDashboard();
@@ -523,6 +530,24 @@ class DashboardManager {
         container.innerHTML = html;
     }
 
+    exportReport(format, button) {
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> Export…';
+        button.disabled = true;
+
+        const link = document.createElement('a');
+        link.href = `/api/dashboard/export/${format}?days=${this.currentPeriod}`;
+        link.download = '';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        setTimeout(() => {
+            button.innerHTML = originalText;
+            button.disabled = false;
+        }, 2000);
+    }
+
     // Utility functions
     formatNumber(num) {
         if (num >= 1000000) {
@@ -566,8 +591,8 @@ class DashboardManager {
     }
 
     showLoading(show) {
-        document.getElementById('loading-state').style.display = show ? 'block' : 'none';
-        document.getElementById('dashboard-content').style.display = show ? 'none' : 'block';
+        document.getElementById('loading-state').hidden = !show;
+        document.getElementById('dashboard-content').hidden = show;
     }
 
     showError(message) {
@@ -627,34 +652,5 @@ document.addEventListener('DOMContentLoaded', () => {
     dashboard = new DashboardManager();
 });
 
-// Export function
-function exportReport(format) {
-    const currentPeriod = dashboard ? dashboard.currentPeriod : 30;
-    
-    // Show loading state
-    const exportBtn = event.target;
-    const originalText = exportBtn.innerHTML;
-    exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Export...';
-    exportBtn.disabled = true;
-    
-    // Create download link
-    const url = `/api/dashboard/export/${format}?days=${currentPeriod}`;
-    
-    // Use a temporary link to trigger download
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = '';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    // Reset button after delay
-    setTimeout(() => {
-        exportBtn.innerHTML = originalText;
-        exportBtn.disabled = false;
-    }, 2000);
-}
-
-// Export for global access
+// Export the manager reference for diagnostics/integration hooks.
 window.dashboard = dashboard;
-window.exportReport = exportReport;
