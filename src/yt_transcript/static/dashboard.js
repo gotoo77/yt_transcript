@@ -12,6 +12,7 @@ class DashboardManager {
         this.lastData = null;
 
         this.initializeEventListeners();
+        this.updatePeriodLabels();
         this.loadDashboard();
         this.startAutoRefresh();
     }
@@ -36,6 +37,14 @@ class DashboardManager {
             }
         });
 
+        window.addEventListener('yt-language-change', () => {
+            this.updatePeriodLabels();
+            if (this.lastData) {
+                this.renderDashboard(this.lastData);
+                this.updateRefreshStatus(this.t('dashboard.updated'));
+            }
+        });
+
         // Auto-refresh toggle (could be added)
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
@@ -44,6 +53,23 @@ class DashboardManager {
                 this.startAutoRefresh();
                 this.loadDashboard();
             }
+        });
+    }
+
+    t(key, params = {}) {
+        return window.YTI18n?.t(key, params) ?? key;
+    }
+
+    dateLocale() {
+        return window.YTI18n?.getDateLocale?.() ?? 'fr-FR';
+    }
+
+    updatePeriodLabels() {
+        document.querySelectorAll('[data-period]').forEach(btn => {
+            const days = Number(btn.dataset.period);
+            btn.textContent = days === 365
+                ? this.t('dashboard.year')
+                : this.t('dashboard.days', {count:days});
         });
     }
 
@@ -74,13 +100,13 @@ class DashboardManager {
             if (result.success && result.data) {
                 await this.renderDashboard(result.data);
                 this.showLoading(false);
-                this.updateRefreshStatus('Données mises à jour');
+                this.updateRefreshStatus(this.t('dashboard.updated'));
             } else {
-                this.showError(result.error || 'Erreur lors du chargement');
+                this.showError(result.error || this.t('dashboard.loadError'));
             }
         } catch (error) {
             console.error('Erreur dashboard:', error);
-            this.showError('Erreur de connexion');
+            this.showError(this.t('dashboard.connectionError'));
         } finally {
             this.isLoading = false;
         }
@@ -187,7 +213,7 @@ class DashboardManager {
     async createAnalysesChart(dailyData) {
         const ctx = document.getElementById('analysesChart').getContext('2d');
         
-        const labels = dailyData.map(d => new Date(d.date).toLocaleDateString('fr-FR'));
+        const labels = dailyData.map(d => new Date(d.date).toLocaleDateString(this.dateLocale()));
         const counts = dailyData.map(d => d.count);
         const palette = this.getChartPalette();
 
@@ -196,7 +222,7 @@ class DashboardManager {
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'Analyses par jour',
+                    label: this.t('dashboard.datasetAnalyses'),
                     data: counts,
                     borderColor: palette.accent,
                     backgroundColor: palette.accentSoft,
@@ -369,17 +395,19 @@ class DashboardManager {
         const ctx = document.getElementById('weekdayChart').getContext('2d');
         
         const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-        const weekdaysFr = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
-        
+        const dayLabels = this.dateLocale() === 'en-GB'
+            ? weekdays
+            : ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+
         const data = weekdays.map(day => weekdayData[day] || 0);
         const palette = this.getChartPalette();
 
         return new Chart(ctx, {
             type: 'radar',
             data: {
-                labels: weekdaysFr,
+                labels: dayLabels,
                 datasets: [{
-                    label: 'Activité',
+                    label: this.t('dashboard.chartWeekday'),
                     data: data,
                     borderColor: palette.accent,
                     backgroundColor: palette.accentSoft,
@@ -485,22 +513,22 @@ class DashboardManager {
                 <div class="insight-card">
                     <div class="insight-title">
                         <i class="fas fa-chart-bar text-info"></i>
-                        Métriques de Contenu
+                        ${this.t('dashboard.contentMetrics')}
                     </div>
                     <div class="metric-row">
-                        <span>Mots moyens par analyse</span>
+                        <span>${this.t('dashboard.avgWords')}</span>
                         <strong>${this.formatNumber(metrics.avg_words_per_analysis || 0)}</strong>
                     </div>
                     <div class="metric-row">
-                        <span>Vocabulaire unique moyen</span>
+                        <span>${this.t('dashboard.avgUnique')}</span>
                         <strong>${this.formatNumber(metrics.avg_unique_words || 0)}</strong>
                     </div>
                     <div class="metric-row">
-                        <span>Richesse vocabulaire</span>
+                        <span>${this.t('dashboard.avgRichness')}</span>
                         <strong>${(metrics.avg_vocabulary_richness || 0).toFixed(2)}</strong>
                     </div>
                     <div class="metric-row">
-                        <span>Sentiment moyen</span>
+                        <span>${this.t('dashboard.avgSentiment')}</span>
                         <strong class="${this.getSentimentClass(metrics.avg_sentiment)}">
                             ${(metrics.avg_sentiment || 0).toFixed(3)}
                         </strong>
@@ -516,22 +544,22 @@ class DashboardManager {
                 <div class="insight-card">
                     <div class="insight-title">
                         <i class="fas fa-clock text-warning"></i>
-                        Patterns d'Utilisation
+                        ${this.t('dashboard.patterns')}
                     </div>
                     <div class="metric-row">
-                        <span>Analyses totales étudiées</span>
+                        <span>${this.t('dashboard.patternsTotal')}</span>
                         <strong>${patterns.total_patterns_analyzed || 0}</strong>
                     </div>
                     <div class="metric-row">
-                        <span>Mode préféré</span>
+                        <span>${this.t('dashboard.preferredMode')}</span>
                         <strong>${this.getPreferredMode(patterns.preferred_modes)}</strong>
                     </div>
                     <div class="metric-row">
-                        <span>Jour le plus actif</span>
+                        <span>${this.t('dashboard.activeDay')}</span>
                         <strong>${this.getMostActiveDay(patterns.active_weekdays)}</strong>
                     </div>
                     <div class="metric-row">
-                        <span>Heure de pic</span>
+                        <span>${this.t('dashboard.peakHour')}</span>
                         <strong>${this.getPeakHour(patterns.peak_hours)}h</strong>
                     </div>
                 </div>
@@ -554,7 +582,7 @@ class DashboardManager {
             const top = topAnalyses.most_words[0];
             html += `
                 <div class="metric-row">
-                    <span>Plus de mots</span>
+                    <span>${this.t('dashboard.mostWords')}</span>
                     <strong>${this.formatNumber(top.words)} mots</strong>
                 </div>
             `;
@@ -564,7 +592,7 @@ class DashboardManager {
             const top = topAnalyses.most_complex[0];
             html += `
                 <div class="metric-row">
-                    <span>Plus complexe</span>
+                    <span>${this.t('dashboard.mostComplex')}</span>
                     <strong>${top.complexity.toFixed(3)}</strong>
                 </div>
             `;
@@ -574,14 +602,14 @@ class DashboardManager {
             const top = topAnalyses.richest_vocabulary[0];
             html += `
                 <div class="metric-row">
-                    <span>Vocabulaire le plus riche</span>
+                    <span>${this.t('dashboard.richest')}</span>
                     <strong>${top.richness.toFixed(3)}</strong>
                 </div>
             `;
         }
         
         if (html === '') {
-            html = '<p class="text-muted text-center">Aucune donnée disponible</p>';
+            html = `<p class="text-muted text-center">${this.t('dashboard.noData')}</p>`;
         }
         
         container.innerHTML = html;
@@ -589,7 +617,7 @@ class DashboardManager {
 
     exportReport(format, button) {
         const originalText = button.innerHTML;
-        button.innerHTML = '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> Export…';
+        button.innerHTML = `<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> ${this.t('dashboard.exporting')}`;
         button.disabled = true;
 
         const link = document.createElement('a');
@@ -612,7 +640,7 @@ class DashboardManager {
         } else if (num >= 1000) {
             return (num / 1000).toFixed(1) + 'K';
         }
-        return num.toLocaleString('fr-FR');
+        return num.toLocaleString(this.dateLocale());
     }
 
     getSentimentClass(score) {
@@ -633,6 +661,7 @@ class DashboardManager {
         const entries = Object.entries(weekdays);
         if (entries.length === 0) return 'N/A';
         const dayName = entries.sort((a, b) => b[1] - a[1])[0][0];
+        if (this.dateLocale() === 'en-GB') return dayName;
         const dayTranslations = {
             'Monday': 'Lundi', 'Tuesday': 'Mardi', 'Wednesday': 'Mercredi',
             'Thursday': 'Jeudi', 'Friday': 'Vendredi', 'Saturday': 'Samedi', 'Sunday': 'Dimanche'
@@ -661,10 +690,10 @@ class DashboardManager {
             <div class="ui-empty-state ui-empty-state-error" role="alert">
                 <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
                 <div>
-                    <strong>Impossible de charger le tableau de bord</strong>
+                    <strong>${this.t('dashboard.errorTitle')}</strong>
                     <p>${message}</p>
                 </div>
-                <button class="btn btn-outline-danger" type="button" id="dashboard-retry">Réessayer</button>
+                <button class="btn btn-outline-danger" type="button" id="dashboard-retry">${this.t('dashboard.retry')}</button>
             </div>
         `;
         document.getElementById('dashboard-retry').addEventListener('click', () => this.loadDashboard());
@@ -685,7 +714,7 @@ class DashboardManager {
         if (timestamp) {
             const date = new Date(timestamp);
             document.getElementById('last-update').textContent = 
-                date.toLocaleString('fr-FR');
+                date.toLocaleString(this.dateLocale());
         }
     }
 
