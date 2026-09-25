@@ -172,16 +172,22 @@ document.getElementById('analyze-btn').addEventListener('click', async () => {
                         resultDiv.innerHTML = `
                             <h5><i class="fas fa-brain"></i> Analyse conceptuelle</h5>
                             <p><strong>${data.result.length} thèmes détectés</strong> dans le texte (${data.word_count} mots analysés)</p>
-                            ${data.result.map(([category, info]) => `
-                                <div class="concept-category mb-3 p-3 bg-light rounded">
-                                    <h6 class="text-capitalize">
-                                        <i class="fas fa-tag text-primary"></i> ${category}
-                                        <span class="badge bg-success ms-2">${info.percentage}%</span>
-                                    </h6>
-                                    <p class="mb-1"><strong>Score:</strong> ${info.score} mentions</p>
-                                    <p class="mb-0"><strong>Mots-clés:</strong> ${[...new Set(info.words)].map(word => `<span class="badge bg-secondary me-1">${word}</span>`).join('')}</p>
-                                </div>
-                            `).join('')}
+                            <div class="concept-grid">
+                                ${data.result.map(([category, info]) => `
+                                    <article class="concept-category">
+                                        <div class="concept-heading">
+                                            <h6 class="text-capitalize mb-0">
+                                                <i class="fas fa-tag text-primary" aria-hidden="true"></i> ${category}
+                                            </h6>
+                                            <span class="badge bg-success">${info.percentage}%</span>
+                                        </div>
+                                        <p class="concept-score"><strong>${info.score}</strong> mentions</p>
+                                        <div class="concept-keywords" aria-label="Mots-clés">
+                                            ${[...new Set(info.words)].map(word => `<span class="badge bg-secondary">${word}</span>`).join('')}
+                                        </div>
+                                    </article>
+                                `).join('')}
+                            </div>
                         `;
                         
                         // Créer le graphique des concepts
@@ -456,6 +462,8 @@ function createFrequencyChart(data) {
         }
     });
     
+    document.getElementById('frequency-chart-panel').hidden = false;
+    document.getElementById('concepts-chart-panel').hidden = true;
     const chartsSection = document.getElementById('charts-section');
     chartsSection.style.display = 'block';
     chartsSection.classList.add('fade-in');
@@ -507,6 +515,8 @@ function createConceptsChart(data) {
         }
     });
     
+    document.getElementById('frequency-chart-panel').hidden = true;
+    document.getElementById('concepts-chart-panel').hidden = false;
     const chartsSection = document.getElementById('charts-section');
     if (chartsSection.style.display !== 'block') {
         chartsSection.style.display = 'block';
@@ -531,25 +541,25 @@ async function loadStatistics(text) {
             
             statsContent.innerHTML = `
                 <div class="col-md-3 col-sm-6 mb-3">
-                    <div class="text-center p-3 bg-white rounded shadow-sm">
+                    <div class="stat-tile">
                         <h4 class="text-primary mb-1">${stats.total_words}</h4>
                         <small class="text-muted">Mots total</small>
                     </div>
                 </div>
                 <div class="col-md-3 col-sm-6 mb-3">
-                    <div class="text-center p-3 bg-white rounded shadow-sm">
+                    <div class="stat-tile">
                         <h4 class="text-success mb-1">${stats.unique_words}</h4>
                         <small class="text-muted">Mots uniques</small>
                     </div>
                 </div>
                 <div class="col-md-3 col-sm-6 mb-3">
-                    <div class="text-center p-3 bg-white rounded shadow-sm">
+                    <div class="stat-tile">
                         <h4 class="text-info mb-1">${stats.reading_time_minutes}min</h4>
                         <small class="text-muted">Temps lecture</small>
                     </div>
                 </div>
                 <div class="col-md-3 col-sm-6 mb-3">
-                    <div class="text-center p-3 bg-white rounded shadow-sm">
+                    <div class="stat-tile">
                         <h4 class="text-warning mb-1">${stats.complexity_score}</h4>
                         <small class="text-muted">Complexité</small>
                     </div>
@@ -962,110 +972,49 @@ function displayReadabilityAnalysis(readability) {
     readabilitySection.classList.add('fade-in');
 }
 
-function displayEmotionsAnalysis(emotions) {
+function displayEmotionsAnalysis(data) {
     const emotionsSection = document.getElementById('emotions-section');
     const emotionsContent = document.getElementById('emotions-content');
-    
-    if (!emotions || Object.keys(emotions).length === 0) {
-        emotionsContent.innerHTML = '<p class="text-muted">Aucune donnée émotionnelle détectée.</p>';
+
+    const distribution = data?.emotions || {};
+    const emotionList = Object.entries(distribution)
+        .filter(([, score]) => Number.isFinite(Number(score)))
+        .map(([emotion, score]) => ({ emotion, score: Number(score) }))
+        .sort((a, b) => b.score - a.score);
+
+    if (emotionList.length === 0) {
+        emotionsContent.innerHTML = `
+            <div class="emotion-summary">
+                <div><span class="text-muted">Émotion dominante</span><strong>Aucune</strong></div>
+                <div><span class="text-muted">Mots émotionnels</span><strong>${data?.total_emotion_words ?? 0}</strong></div>
+                <div><span class="text-muted">Intensité émotionnelle</span><strong>${Number(data?.emotional_intensity || 0).toFixed(1)}%</strong></div>
+            </div>
+        `;
         emotionsSection.style.display = 'block';
         return;
     }
-    
-    // Convertir les émotions en tableau trié par intensité
-    const emotionList = Object.entries(emotions)
-        .map(([emotion, score]) => ({ emotion, score }))
-        .sort((a, b) => b.score - a.score);
-    
-    const emotionColors = {
-        'joy': 'success',
-        'happiness': 'success', 
-        'anger': 'danger',
-        'sadness': 'primary',
-        'fear': 'warning',
-        'surprise': 'info',
-        'disgust': 'secondary',
-        'anticipation': 'info',
-        'trust': 'success',
-        'positive': 'success',
-        'negative': 'danger',
-        'neutral': 'secondary'
-    };
-    
-    const emotionIcons = {
-        'joy': 'laugh',
-        'happiness': 'smile',
-        'anger': 'angry',
-        'sadness': 'sad-tear', 
-        'fear': 'frown',
-        'surprise': 'surprise',
-        'disgust': 'meh',
-        'anticipation': 'clock',
-        'trust': 'heart',
-        'positive': 'thumbs-up',
-        'negative': 'thumbs-down',
-        'neutral': 'meh'
-    };
-    
-    let emotionsHtml = '<div class="row">';
-    
-    emotionList.forEach((item, index) => {
-        const color = emotionColors[item.emotion.toLowerCase()] || 'secondary';
-        const icon = emotionIcons[item.emotion.toLowerCase()] || 'circle';
-        const percentage = Math.round(item.score * 100);
-        
-        if (index % 3 === 0 && index > 0) {
-            emotionsHtml += '</div><div class="row mt-3">';
-        }
-        
-        emotionsHtml += `
-            <div class="col-md-4 mb-3">
-                <div class="card text-center">
-                    <div class="card-body">
-                        <i class="fas fa-${icon} fa-2x text-${color} mb-2"></i>
-                        <h6 class="card-title text-capitalize">${item.emotion}</h6>
-                        <div class="progress">
-                            <div class="progress-bar bg-${color}" style="width: ${percentage}%"></div>
-                        </div>
-                        <small class="text-muted">${percentage}%</small>
-                    </div>
-                </div>
-            </div>
-        `;
-    });
-    
-    emotionsHtml += '</div>';
-    
-    // Ajouter un graphique en barres pour les principales émotions
-    if (emotionList.length > 0) {
-        const topEmotions = emotionList.slice(0, 5);
-        emotionsHtml += `
-            <div class="mt-4">
-                <h6>Top 5 des émotions détectées</h6>
-                <div class="emotion-bars">
-        `;
-        
-        topEmotions.forEach(item => {
-            const color = emotionColors[item.emotion.toLowerCase()] || 'secondary';
-            const percentage = Math.round(item.score * 100);
-            
-            emotionsHtml += `
-                <div class="mb-2">
-                    <div class="d-flex justify-content-between">
+
+    emotionsContent.innerHTML = `
+        <div class="emotion-summary">
+            <div><span class="text-muted">Émotion dominante</span><strong class="text-capitalize">${data.dominant_emotion || 'Aucune'}</strong></div>
+            <div><span class="text-muted">Mots émotionnels</span><strong>${data.total_emotion_words ?? 0}</strong></div>
+            <div><span class="text-muted">Intensité émotionnelle</span><strong>${Number(data.emotional_intensity || 0).toFixed(1)}%</strong></div>
+        </div>
+        <div class="emotion-bars mt-3">
+            ${emotionList.map(item => `
+                <div class="emotion-row">
+                    <div class="d-flex justify-content-between gap-3">
                         <span class="text-capitalize">${item.emotion}</span>
-                        <span>${percentage}%</span>
+                        <strong>${item.score.toFixed(1)}%</strong>
                     </div>
-                    <div class="progress">
-                        <div class="progress-bar bg-${color}" style="width: ${percentage}%"></div>
+                    <div class="progress" role="progressbar" aria-label="${item.emotion}" aria-valuenow="${item.score}" aria-valuemin="0" aria-valuemax="100">
+                        <div class="progress-bar" style="width: ${Math.min(100, Math.max(0, item.score))}%"></div>
                     </div>
                 </div>
-            `;
-        });
-        
-        emotionsHtml += '</div></div>';
-    }
-    
-    emotionsContent.innerHTML = emotionsHtml;
+            `).join('')}
+        </div>
+    `;
+
     emotionsSection.style.display = 'block';
     emotionsSection.classList.add('fade-in');
 }
