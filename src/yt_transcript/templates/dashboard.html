@@ -10,26 +10,32 @@
     <script src="https://cdn.jsdelivr.net/npm/date-fns@3.3.1/index.min.js"></script>
     <link rel="stylesheet" href="/static/modern.css">
 </head>
-<body>
-<a class="skip-link" href="#main-content">Aller au contenu principal</a>
+<body data-i18n-title="dashboard.title">
+<a class="skip-link" href="#main-content" data-i18n="skip.main">Aller au contenu principal</a>
 <div class="workspace">
-  <aside class="workspace-sidebar" aria-label="Navigation de l'application">
+  <aside class="workspace-sidebar" aria-label="Navigation de l'application" data-i18n-aria-label="nav.app">
     <a class="brand" href="/">▶ Transcript Studio</a>
-    <nav class="workspace-nav" aria-label="Navigation principale">
-      <a href="/">Transcription et analyse</a>
-      <a href="/dashboard" aria-current="page">Tableau de bord</a>
-      <a href="/api/docs/" target="_blank" rel="noopener noreferrer">Documentation API <span class="visually-hidden">(nouvel onglet)</span></a>
+    <nav class="workspace-nav" aria-label="Navigation principale" data-i18n-aria-label="nav.label">
+      <a href="/" data-i18n="nav.analysis">Transcription et analyse</a>
+      <a href="/dashboard" aria-current="page" data-i18n="nav.dashboard">Tableau de bord</a>
+      <a href="/api/docs/" target="_blank" rel="noopener noreferrer"><span data-i18n="nav.api">Documentation API</span> <span class="visually-hidden" data-i18n="nav.newTab">(nouvel onglet)</span></a>
     </nav>
   </aside>
   <main id="main-content" class="workspace-main">
     <header class="workspace-topbar">
-      <p>Historique et visualisations</p>
-      <button class="theme-toggle" type="button" id="theme-toggle" aria-label="Activer le thème clair" aria-pressed="false">☀ Thème clair</button>
+      <p data-i18n="top.dashboard">Historique et visualisations</p>
+      <div class="topbar-actions">
+        <div class="language-switcher" role="group" aria-label="Langue de l’interface" data-i18n-aria-label="language.group">
+          <button type="button" data-locale="fr" aria-pressed="false">🇫🇷 FR</button>
+          <button type="button" data-locale="en" aria-pressed="false">🇬🇧 EN</button>
+        </div>
+        <button class="theme-toggle" type="button" id="theme-toggle" aria-label="Activer le thème clair" aria-pressed="false">☀ Thème clair</button>
+      </div>
     </header>
     <!-- Auto-refresh indicator -->
     <div class="auto-refresh" id="refresh-status" role="status" aria-live="polite">
         <span class="status-indicator" aria-hidden="true"></span>
-        <span id="refresh-text">Mise à jour automatique</span>
+        <span id="refresh-text" data-i18n="dashboard.refreshAuto">Mise à jour automatique</span>
     </div>
 
     <!-- Main Container -->
@@ -37,24 +43,24 @@
         <!-- Header -->
         <div class="dashboard-header ui-hero">
             <p class="ui-eyebrow">Analytics</p>
-            <h1><i class="fas fa-chart-line" aria-hidden="true"></i> Tableau de bord</h1>
-            <p class="mb-0">Métriques et tendances de vos analyses de transcriptions</p>
+            <h1><i class="fas fa-chart-line" aria-hidden="true"></i> <span data-i18n="dashboard.title">Tableau de bord</span></h1>
+            <p class="mb-0" data-i18n="dashboard.subtitle">Métriques et tendances de vos analyses de transcriptions</p>
             
             <!-- Period Selector -->
-            <div class="period-selector" role="group" aria-label="Période d'analyse">
+            <div class="period-selector" role="group" aria-label="Période d'analyse" data-i18n-aria-label="dashboard.period">
                 <button class="period-btn" type="button" data-period="7">7 jours</button>
                 <button class="period-btn active" type="button" data-period="30" aria-pressed="true">30 jours</button>
                 <button class="period-btn" type="button" data-period="90">90 jours</button>
-                <button class="period-btn" type="button" data-period="365">1 an</button>
+                <button class="period-btn" type="button" data-period="365" data-i18n="dashboard.year">1 an</button>
             </div>
             
             <!-- Export Buttons -->
-            <div class="dashboard-actions" aria-label="Exports">
+            <div class="dashboard-actions" aria-label="Exports" data-i18n-aria-label="dashboard.exports">
                 <button class="export-btn export-btn-danger" type="button" data-export-format="pdf">
-                    <i class="fas fa-file-pdf" aria-hidden="true"></i> Export PDF
+                    <i class="fas fa-file-pdf" aria-hidden="true"></i> <span data-i18n="dashboard.exportPdf">Export PDF</span>
                 </button>
                 <button class="export-btn export-btn-success" type="button" data-export-format="excel">
-                    <i class="fas fa-file-excel" aria-hidden="true"></i> Export Excel
+                    <i class="fas fa-file-excel" aria-hidden="true"></i> <span data-i18n="dashboard.exportExcel">Export Excel</span>
                 </button>
             </div>
         </div>
@@ -65,7 +71,7 @@
             <!-- Loading State -->
             <div id="loading-state" class="loading-spinner" role="status" aria-live="polite">
                 <i class="fas fa-spinner"></i>
-                <p>Chargement des données analytiques...</p>
+                <p data-i18n="dashboard.loading">Chargement des données analytiques...</p>
             </div>
 
             <!-- Dashboard Content (Hidden initially) -->
@@ -75,30 +81,30 @@
                 <div class="row mb-4" id="kpis-section">
                     <div class="col-md-3">
                         <div class="kpi-card text-center">
-                            <div class="kpi-label">Total Analyses</div>
+                            <div class="kpi-label" data-i18n="dashboard.kpiAnalyses">Total Analyses</div>
                             <div class="kpi-value" id="total-analyses">-</div>
-                            <div class="kpi-description">Analyses effectuées</div>
+                            <div class="kpi-description" data-i18n="dashboard.kpiAnalysesDesc">Analyses effectuées</div>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="kpi-card text-center">
-                            <div class="kpi-label">Mots Analysés</div>
+                            <div class="kpi-label" data-i18n="dashboard.kpiWords">Mots Analysés</div>
                             <div class="kpi-value" id="total-words">-</div>
-                            <div class="kpi-description">Mots traités au total</div>
+                            <div class="kpi-description" data-i18n="dashboard.kpiWordsDesc">Mots traités au total</div>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="kpi-card text-center">
-                            <div class="kpi-label">Temps de Lecture</div>
+                            <div class="kpi-label" data-i18n="dashboard.kpiReading">Temps de Lecture</div>
                             <div class="kpi-value" id="total-reading-time">-</div>
-                            <div class="kpi-description">Heures de contenu</div>
+                            <div class="kpi-description" data-i18n="dashboard.kpiReadingDesc">Heures de contenu</div>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="kpi-card text-center">
-                            <div class="kpi-label">Complexité Moyenne</div>
+                            <div class="kpi-label" data-i18n="dashboard.kpiComplexity">Complexité Moyenne</div>
                             <div class="kpi-value" id="avg-complexity">-</div>
-                            <div class="kpi-description">Score de difficulté</div>
+                            <div class="kpi-description" data-i18n="dashboard.kpiComplexityDesc">Score de difficulté</div>
                         </div>
                     </div>
                 </div>
@@ -111,7 +117,7 @@
                         <div class="chart-container chart-container-wide">
                             <div class="chart-title">
                                 <i class="fas fa-chart-area text-primary"></i>
-                                Évolution des Analyses
+                                <span data-i18n="dashboard.chartAnalyses">Évolution des Analyses</span>
                             </div>
                             <div class="chart-canvas-wide">
                                 <canvas id="analysesChart"></canvas>
@@ -122,7 +128,7 @@
                         <div class="chart-container">
                             <div class="chart-title">
                                 <i class="fas fa-chart-pie text-success"></i>
-                                Modes d'Analyse
+                                <span data-i18n="dashboard.chartModes">Modes d'Analyse</span>
                             </div>
                             <canvas id="modesChart"></canvas>
                         </div>
@@ -134,7 +140,7 @@
                         <div class="chart-container">
                             <div class="chart-title">
                                 <i class="fas fa-heart text-danger"></i>
-                                Analyse de Sentiment
+                                <span data-i18n="dashboard.chartSentiment">Analyse de Sentiment</span>
                             </div>
                             <canvas id="sentimentChart"></canvas>
                         </div>
@@ -143,7 +149,7 @@
                         <div class="chart-container">
                             <div class="chart-title">
                                 <i class="fas fa-brain text-warning"></i>
-                                Distribution de Complexité
+                                <span data-i18n="dashboard.chartComplexity">Distribution de Complexité</span>
                             </div>
                             <canvas id="complexityChart"></canvas>
                         </div>
@@ -165,7 +171,7 @@
                         <div class="chart-container">
                             <div class="chart-title">
                                 <i class="fas fa-clock text-info"></i>
-                                Activité Hebdomadaire
+                                <span data-i18n="dashboard.chartWeekday">Activité Hebdomadaire</span>
                             </div>
                             <canvas id="weekdayChart"></canvas>
                         </div>
@@ -174,7 +180,7 @@
                         <div class="chart-container">
                             <div class="chart-title">
                                 <i class="fas fa-chart-bar text-secondary"></i>
-                                Répartition par Mots
+                                <span data-i18n="dashboard.chartWords">Répartition par Mots</span>
                             </div>
                             <canvas id="wordRangesChart"></canvas>
                         </div>
@@ -183,7 +189,7 @@
                         <div class="insight-card">
                             <div class="insight-title">
                                 <i class="fas fa-trophy text-warning"></i>
-                                Analyses Remarquables
+                                <span data-i18n="dashboard.top">Analyses Remarquables</span>
                             </div>
                             <div id="top-analyses">
                                 <!-- Top analyses will be populated here -->
@@ -196,7 +202,7 @@
                 <div class="dashboard-footer text-center mt-4 mb-2">
                     <small class="text-muted">
                         <i class="fas fa-sync-alt"></i>
-                        Dernière mise à jour: <span id="last-update">-</span>
+                        <span data-i18n="dashboard.lastUpdate">Dernière mise à jour :</span> <span id="last-update">-</span>
                     </small>
                 </div>
 
@@ -207,6 +213,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   </main>
 </div>
+    <script src="/static/i18n.js" defer></script>
     <script src="/static/theme.js" defer></script>
     <script src="/static/dashboard.js"></script>
 </body>
