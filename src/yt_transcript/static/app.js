@@ -420,6 +420,54 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Application initialisée - Boutons:', hasText ? 'activés' : 'désactivés');
 });
 
+function getUiChartPalette() {
+    const styles = getComputedStyle(document.documentElement);
+    const read = (name) => styles.getPropertyValue(name).trim();
+    return {
+        ink: read('--ui-ink'),
+        muted: read('--ui-muted'),
+        surface: read('--ui-surface'),
+        line: read('--ui-line'),
+        grid: read('--ui-chart-grid'),
+        accent: read('--ui-accent'),
+        accentSoft: read('--ui-accent-soft'),
+        series: [
+            read('--ui-chart-1'),
+            read('--ui-chart-2'),
+            read('--ui-chart-3'),
+            read('--ui-chart-4'),
+            read('--ui-chart-5')
+        ]
+    };
+}
+
+function applyMainChartTheme() {
+    const palette = getUiChartPalette();
+
+    if (frequencyChart) {
+        const dataset = frequencyChart.data.datasets[0];
+        dataset.backgroundColor = palette.accentSoft;
+        dataset.borderColor = palette.accent;
+        frequencyChart.options.plugins.title.color = palette.ink;
+        frequencyChart.options.scales.x.ticks.color = palette.muted;
+        frequencyChart.options.scales.y.ticks.color = palette.muted;
+        frequencyChart.options.scales.x.grid.color = palette.grid;
+        frequencyChart.options.scales.y.grid.color = palette.grid;
+        frequencyChart.update();
+    }
+
+    if (conceptsChart) {
+        const dataset = conceptsChart.data.datasets[0];
+        dataset.backgroundColor = palette.series;
+        dataset.borderColor = palette.surface;
+        conceptsChart.options.plugins.title.color = palette.ink;
+        conceptsChart.options.plugins.legend.labels.color = palette.muted;
+        conceptsChart.update();
+    }
+}
+
+window.addEventListener('yt-theme-change', applyMainChartTheme);
+
 // Fonction pour créer le graphique de fréquence
 function createFrequencyChart(data) {
     const ctx = document.getElementById('frequency-chart').getContext('2d');
@@ -431,7 +479,8 @@ function createFrequencyChart(data) {
     
     const labels = data.map(([word, count]) => word);
     const counts = data.map(([word, count]) => count);
-    
+    const palette = getUiChartPalette();
+
     frequencyChart = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -439,8 +488,8 @@ function createFrequencyChart(data) {
             datasets: [{
                 label: 'Fréquence',
                 data: counts,
-                backgroundColor: 'rgba(54, 162, 235, 0.6)',
-                borderColor: 'rgba(54, 162, 235, 1)',
+                backgroundColor: palette.accentSoft,
+                borderColor: palette.accent,
                 borderWidth: 2
             }]
         },
@@ -450,7 +499,8 @@ function createFrequencyChart(data) {
             plugins: {
                 title: {
                     display: true,
-                    text: 'Mots les plus fréquents'
+                    text: 'Mots les plus fréquents',
+                    color: palette.ink
                 },
                 legend: {
                     display: false
@@ -460,12 +510,20 @@ function createFrequencyChart(data) {
                 y: {
                     beginAtZero: true,
                     ticks: {
-                        stepSize: 1
+                        stepSize: 1,
+                        color: palette.muted
+                    },
+                    grid: {
+                        color: palette.grid
                     }
                 },
                 x: {
                     ticks: {
-                        maxRotation: 45
+                        maxRotation: 45,
+                        color: palette.muted
+                    },
+                    grid: {
+                        color: palette.grid
                     }
                 }
             }
@@ -490,20 +548,17 @@ function createConceptsChart(data) {
     
     const labels = data.map(([category, info]) => category);
     const percentages = data.map(([category, info]) => info.percentage);
-    
-    const colors = [
-        '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8'
-    ];
-    
+    const palette = getUiChartPalette();
+
     conceptsChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
             labels: labels,
             datasets: [{
                 data: percentages,
-                backgroundColor: colors.slice(0, labels.length),
+                backgroundColor: labels.map((_, index) => palette.series[index % palette.series.length]),
                 borderWidth: 2,
-                borderColor: '#fff'
+                borderColor: palette.surface
             }]
         },
         options: {
@@ -512,13 +567,15 @@ function createConceptsChart(data) {
             plugins: {
                 title: {
                     display: true,
-                    text: 'Répartition des concepts'
+                    text: 'Répartition des concepts',
+                    color: palette.ink
                 },
                 legend: {
                     position: 'bottom',
                     labels: {
                         padding: 20,
-                        usePointStyle: true
+                        usePointStyle: true,
+                        color: palette.muted
                     }
                 }
             }
