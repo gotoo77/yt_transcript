@@ -160,3 +160,42 @@ def test_excel_export_propagates_write_errors(monkeypatch, sample_dashboard):
     monkeypatch.setattr("openpyxl.Workbook.save", fail_save)
     with pytest.raises(OSError, match="simulated destination failure"):
         ReportExportService()._generate_excel_report(sample_dashboard, 30)
+
+
+def test_top_analyses_section_handles_missing_and_empty_rankings():
+    service = ReportExportService()
+
+    elements = service._create_top_analyses_section({})
+    assert elements
+
+    elements = service._create_top_analyses_section(
+        {
+            "most_words": [None],
+            "most_complex": [None],
+            "richest_vocabulary": [None],
+        }
+    )
+    assert elements
+
+
+def test_trends_section_non_empty_data_builds_summary_and_table():
+    elements = ReportExportService()._create_trends_section(
+        {"daily_analyses": [{"date": "2026-09-25", "count": 2}]}
+    )
+    assert len(elements) > 3
+
+
+def test_excel_export_reports_missing_openpyxl(monkeypatch, sample_dashboard):
+    import builtins
+
+    real_import = builtins.__import__
+
+    def blocked_import(name, *args, **kwargs):
+        if name == "openpyxl":
+            raise ImportError("simulated missing openpyxl")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", blocked_import)
+
+    with pytest.raises(ValueError, match="bibliothèque manquante"):
+        ReportExportService()._generate_excel_report(sample_dashboard, 30)
