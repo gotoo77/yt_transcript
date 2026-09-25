@@ -1,7 +1,6 @@
 """Focused coverage for runtime startup and shutdown failure paths."""
 
 import json
-from pathlib import Path
 from types import SimpleNamespace
 
 import psutil
