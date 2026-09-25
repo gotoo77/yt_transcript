@@ -195,3 +195,17 @@ textarea#transcript-textarea { min-height:280px; line-height:1.6; font-family:ui
  .period-selector,.dashboard-actions { align-items:stretch; }
  .period-btn,.export-btn { flex:1 1 8rem; }
 }
+
+
+/* Chart.js with maintainAspectRatio:false requires a bounded sizing container. */
+.chart-container-wide { min-height:0; }
+.chart-canvas-wide {
+ position:relative;
+ width:100%;
+ height:clamp(260px,32vw,420px);
+}
+.chart-canvas-wide > canvas {
+ display:block;
+ width:100% !important;
+ height:100% !important;
+}
