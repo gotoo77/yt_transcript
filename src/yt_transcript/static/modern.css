@@ -3,6 +3,8 @@
  color-scheme:dark; --ui-bg:#0a101c; --ui-surface:#131e30; --ui-panel:#1b2940;
  --ui-ink:#f2f6ff; --ui-muted:#bdcce2; --ui-line:#40536f;
  --ui-accent:#a1baff; --ui-link:#a9c4ff; --ui-focus:#ffda77;
+ --ui-success:#4fd1a1; --ui-danger:#ff7b8b; --ui-warning:#ffd166;
+ --ui-radius-sm:.55rem; --ui-radius-md:.8rem; --ui-radius-lg:1rem;
  --bs-body-bg:var(--ui-bg); --bs-body-color:var(--ui-ink);
  --bs-secondary-color:var(--ui-muted); --bs-border-color:var(--ui-line);
  --bs-tertiary-bg:var(--ui-panel); --bs-secondary-bg:var(--ui-panel);
@@ -11,6 +13,8 @@
  color-scheme:light; --ui-bg:#edf2fb; --ui-surface:#fff; --ui-panel:#f5f8ff;
  --ui-ink:#17243b; --ui-muted:#42536e; --ui-line:#b5c5da;
  --ui-accent:#234abf; --ui-link:#1646b7; --ui-focus:#795000;
+ --ui-success:#126b50; --ui-danger:#a32738; --ui-warning:#7a5700;
+ --ui-radius-sm:.55rem; --ui-radius-md:.8rem; --ui-radius-lg:1rem;
  --bs-body-bg:var(--ui-bg); --bs-body-color:var(--ui-ink);
  --bs-secondary-color:var(--ui-muted); --bs-border-color:var(--ui-line);
  --bs-tertiary-bg:var(--ui-panel); --bs-secondary-bg:var(--ui-panel);
@@ -72,4 +76,116 @@ textarea#transcript-textarea { min-height:280px; line-height:1.6; font-family:ui
 }
 @media(prefers-reduced-motion:reduce) {
  *,*::before,*::after { animation-duration:.01ms !important; transition-duration:.01ms !important; scroll-behavior:auto !important; }
+}
+
+
+/* Dashboard v2: native consumer of the shared workspace design system. */
+.ui-hero {
+ display:grid;
+ gap:.65rem;
+ padding:clamp(1.25rem,2.5vw,2rem);
+ border-bottom:1px solid var(--ui-line);
+ text-align:left;
+}
+.ui-hero h1,.ui-hero p { margin:0; }
+.ui-eyebrow {
+ color:var(--ui-accent);
+ font-size:.78rem;
+ font-weight:800;
+ letter-spacing:.12em;
+ text-transform:uppercase;
+}
+.period-selector,.dashboard-actions {
+ display:flex;
+ flex-wrap:wrap;
+ gap:.55rem;
+ align-items:center;
+ justify-content:flex-start;
+ margin-top:.45rem;
+ padding:0;
+ background:transparent !important;
+}
+.period-btn,.export-btn {
+ min-height:44px;
+ border:1px solid var(--ui-line);
+ border-radius:var(--ui-radius-sm);
+ padding:.55rem .9rem;
+ font-weight:700;
+ background:var(--ui-panel);
+ color:var(--ui-ink);
+}
+.period-btn:hover,.export-btn:hover { border-color:var(--ui-accent); }
+.period-btn.active {
+ background:var(--ui-accent) !important;
+ color:var(--ui-bg) !important;
+ border-color:var(--ui-accent);
+}
+.export-btn-success { border-color:color-mix(in srgb,var(--ui-success) 65%,var(--ui-line)); }
+.export-btn-danger { border-color:color-mix(in srgb,var(--ui-danger) 65%,var(--ui-line)); }
+.export-btn:disabled { opacity:.65; cursor:wait; }
+.kpi-card,.chart-container,.insight-card {
+ height:100%;
+ padding:1.2rem;
+ margin:0;
+}
+.kpi-card { display:grid; gap:.3rem; align-content:start; }
+.kpi-value {
+ font-size:clamp(1.8rem,4vw,2.5rem);
+ font-weight:800;
+ line-height:1.1;
+ letter-spacing:-.03em;
+}
+.kpi-label {
+ font-size:.78rem;
+ font-weight:800;
+ letter-spacing:.08em;
+ text-transform:uppercase;
+}
+.kpi-description { color:var(--ui-muted) !important; }
+.chart-title {
+ display:flex;
+ align-items:center;
+ gap:.55rem;
+ margin-bottom:1rem;
+ font-size:1rem;
+ font-weight:800;
+}
+.insights-grid {
+ display:grid;
+ grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));
+ gap:1rem;
+ margin:1rem 0;
+}
+.insight-title { margin-bottom:.7rem; font-weight:800; }
+.metric-row {
+ display:flex;
+ justify-content:space-between;
+ gap:1rem;
+ padding:.6rem 0;
+ border-bottom:1px solid var(--ui-line);
+}
+.metric-row:last-child { border-bottom:0; }
+.loading-spinner { padding:3rem 1rem; text-align:center; color:var(--ui-muted); }
+.loading-spinner .fa-spinner { font-size:1.6rem; animation:spin .9s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.status-indicator {
+ display:inline-block;
+ width:.55rem;
+ height:.55rem;
+ margin-right:.4rem;
+ border-radius:50%;
+ background:var(--ui-success);
+}
+.section-divider {
+ height:1px;
+ margin:1.5rem 0;
+ background:var(--ui-line);
+}
+#dashboard-content[hidden] { display:none !important; }
+#dashboard-content .row { --bs-gutter-x:1rem; --bs-gutter-y:1rem; }
+#dashboard-content canvas { max-width:100%; }
+@media(max-width:768px) {
+ .ui-hero { padding:1rem; }
+ .period-selector,.dashboard-actions { align-items:stretch; }
+ .period-btn,.export-btn { flex:1 1 8rem; }
 }
