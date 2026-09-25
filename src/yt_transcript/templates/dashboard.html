@@ -8,228 +8,6 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/date-fns@3.3.1/index.min.js"></script>
-    <style>
-        body { 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        .navbar {
-            background: rgba(255,255,255,0.95) !important;
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(0,0,0,0.1);
-            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
-        }
-        
-        .main-container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
-            margin: 2rem auto;
-            padding: 0;
-            overflow: hidden;
-            max-width: 1400px;
-        }
-        
-        .dashboard-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 2rem;
-            text-align: center;
-        }
-        
-        .kpi-card {
-            background: white;
-            border-radius: 15px;
-            padding: 1.5rem;
-            margin: 1rem 0;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-            border: 1px solid rgba(0,0,0,0.05);
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .kpi-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
-        }
-        
-        .kpi-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, #667eea, #764ba2);
-        }
-        
-        .kpi-value {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: #2c3e50;
-            margin-bottom: 0.5rem;
-        }
-        
-        .kpi-label {
-            color: #7f8c8d;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 0.5rem;
-        }
-        
-        .kpi-description {
-            color: #95a5a6;
-            font-size: 0.8rem;
-        }
-        
-        .chart-container {
-            background: white;
-            border-radius: 15px;
-            padding: 1.5rem;
-            margin: 1rem 0;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-            border: 1px solid rgba(0,0,0,0.05);
-        }
-        
-        .chart-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .period-selector {
-            background: rgba(255,255,255,0.9);
-            border-radius: 10px;
-            padding: 0.5rem;
-            margin: 1rem 0;
-            display: flex;
-            gap: 0.5rem;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-        
-        .period-btn {
-            border: none;
-            background: transparent;
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            transition: all 0.3s ease;
-            color: #667eea;
-            font-weight: 500;
-        }
-        
-        .period-btn.active,
-        .period-btn:hover {
-            background: #667eea;
-            color: white;
-            transform: translateY(-2px);
-        }
-        
-        .loading-spinner {
-            text-align: center;
-            padding: 2rem;
-            color: #7f8c8d;
-        }
-        
-        .loading-spinner i {
-            font-size: 2rem;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .insights-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1rem;
-            margin: 1rem 0;
-        }
-        
-        .insight-card {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border-radius: 15px;
-            padding: 1.5rem;
-            border-left: 4px solid #667eea;
-        }
-        
-        .insight-title {
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 1rem;
-        }
-        
-        .metric-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin: 0.5rem 0;
-            padding: 0.5rem 0;
-            border-bottom: 1px solid rgba(0,0,0,0.1);
-        }
-        
-        .metric-row:last-child {
-            border-bottom: none;
-        }
-        
-        .auto-refresh {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: rgba(255,255,255,0.9);
-            padding: 0.5rem 1rem;
-            border-radius: 25px;
-            border: 1px solid rgba(0,0,0,0.1);
-            font-size: 0.8rem;
-            color: #667eea;
-            z-index: 1000;
-        }
-        
-        .status-indicator {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 0.5rem;
-            background: #28a745;
-        }
-        
-        .section-divider {
-            height: 2px;
-            background: linear-gradient(90deg, transparent, #667eea, transparent);
-            margin: 2rem 0;
-            border-radius: 2px;
-        }
-        
-        @media (max-width: 768px) {
-            .main-container {
-                margin: 1rem;
-                border-radius: 10px;
-            }
-            
-            .dashboard-header {
-                padding: 1rem;
-            }
-            
-            .kpi-value {
-                font-size: 2rem;
-            }
-            
-            .insights-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
     <link rel="stylesheet" href="/static/modern.css">
 </head>
 <body>
@@ -249,33 +27,34 @@
       <button class="theme-toggle" type="button" id="theme-toggle" aria-label="Activer le thème clair" aria-pressed="false">☀ Thème clair</button>
     </header>
     <!-- Auto-refresh indicator -->
-    <div class="auto-refresh" id="refresh-status">
-        <span class="status-indicator"></span>
+    <div class="auto-refresh" id="refresh-status" role="status" aria-live="polite">
+        <span class="status-indicator" aria-hidden="true"></span>
         <span id="refresh-text">Mise à jour automatique</span>
     </div>
 
     <!-- Main Container -->
     <div class="main-container">
         <!-- Header -->
-        <div class="dashboard-header">
-            <h1><i class="fas fa-chart-line"></i> Dashboard Analytics</h1>
-            <p class="mb-0">Métriques en temps réel de votre analyseur de transcriptions</p>
+        <div class="dashboard-header ui-hero">
+            <p class="ui-eyebrow">Analytics</p>
+            <h1><i class="fas fa-chart-line" aria-hidden="true"></i> Tableau de bord</h1>
+            <p class="mb-0">Métriques et tendances de vos analyses de transcriptions</p>
             
             <!-- Period Selector -->
-            <div class="period-selector">
-                <button class="period-btn" data-period="7">7 jours</button>
-                <button class="period-btn active" data-period="30">30 jours</button>
-                <button class="period-btn" data-period="90">90 jours</button>
-                <button class="period-btn" data-period="365">1 an</button>
+            <div class="period-selector" role="group" aria-label="Période d'analyse">
+                <button class="period-btn" type="button" data-period="7">7 jours</button>
+                <button class="period-btn active" type="button" data-period="30" aria-pressed="true">30 jours</button>
+                <button class="period-btn" type="button" data-period="90">90 jours</button>
+                <button class="period-btn" type="button" data-period="365">1 an</button>
             </div>
             
             <!-- Export Buttons -->
-            <div class="period-selector">
-                <button class="period-btn" onclick="exportReport('pdf')" style="background: #dc3545; color: white;">
-                    <i class="fas fa-file-pdf"></i> Export PDF
+            <div class="dashboard-actions" aria-label="Exports">
+                <button class="export-btn export-btn-danger" type="button" data-export-format="pdf">
+                    <i class="fas fa-file-pdf" aria-hidden="true"></i> Export PDF
                 </button>
-                <button class="period-btn" onclick="exportReport('excel')" style="background: #28a745; color: white;">
-                    <i class="fas fa-file-excel"></i> Export Excel
+                <button class="export-btn export-btn-success" type="button" data-export-format="excel">
+                    <i class="fas fa-file-excel" aria-hidden="true"></i> Export Excel
                 </button>
             </div>
         </div>
@@ -284,13 +63,13 @@
         <div class="container-fluid p-4">
             
             <!-- Loading State -->
-            <div id="loading-state" class="loading-spinner">
+            <div id="loading-state" class="loading-spinner" role="status" aria-live="polite">
                 <i class="fas fa-spinner"></i>
                 <p>Chargement des données analytiques...</p>
             </div>
 
             <!-- Dashboard Content (Hidden initially) -->
-            <div id="dashboard-content" style="display: none;">
+            <div id="dashboard-content" hidden>
                 
                 <!-- KPIs Section -->
                 <div class="row mb-4" id="kpis-section">
