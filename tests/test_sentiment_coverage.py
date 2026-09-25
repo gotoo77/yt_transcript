@@ -76,7 +76,7 @@ def test_readability_backend_failure_returns_none(monkeypatch):
 
 def test_syllable_estimator_covers_silent_e_and_consonant_only_word():
     assert estimate_syllables("table") == 1
-    assert estimate_syllables("rhythms") >= 1
+    assert estimate_syllables("brrr") == 1
     assert estimate_syllables("") == 0
 
 
