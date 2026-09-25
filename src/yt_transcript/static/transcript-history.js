@@ -29,11 +29,13 @@
       if (!result.ok) throw new Error("HTTP " + result.status);
       const record = await result.json();
       document.getElementById("video-id").value = record.video_id;
-      document.getElementById("transcript-textarea").value = record.transcript;
-      document.getElementById("analyze-btn").disabled = false;
-      document.getElementById("summary-btn").disabled = false;
+      const textarea = document.getElementById("transcript-textarea");
+      textarea.value = record.transcript;
+      // Programmatic value changes do not fire "input". Reuse the main
+      // transcript-state handler so every text-dependent action is restored.
+      textarea.dispatchEvent(new Event("input", {bubbles:true}));
       status.textContent = "Transcription restaurée : " + record.video_id;
-      document.getElementById("transcript-textarea").focus();
+      textarea.focus();
      } catch (_) { status.textContent = "Impossible de restaurer la transcription."; }
     });
     const remove = document.createElement("button");
