@@ -211,7 +211,7 @@ document.getElementById('analyze-btn').addEventListener('click', async () => {
             `;
         }
         
-        resultDiv.style.display = 'block';
+        resultDiv.hidden = false;
         resultDiv.scrollIntoView({ behavior: 'smooth' });
         
         // Charger les statistiques et le nuage de mots après l'analyse
@@ -231,7 +231,7 @@ document.getElementById('analyze-btn').addEventListener('click', async () => {
                 <i class="fas fa-exclamation-triangle"></i> Erreur de connexion au serveur
             </div>
         `;
-        resultDiv.style.display = 'block';
+        resultDiv.hidden = false;
     } finally {
         // Réactivation du bouton
         analyzeBtn.disabled = false;
@@ -246,11 +246,10 @@ document.getElementById('search-btn').addEventListener('click', () => {
     const searchBox = document.getElementById('search-box');
     const searchInput = document.getElementById('search-input');
     
-    if (searchBox.style.display === 'none') {
-        searchBox.style.display = 'block';
+    searchBox.hidden = !searchBox.hidden;
+    if (!searchBox.hidden) {
         searchInput.focus();
     } else {
-        searchBox.style.display = 'none';
         clearHighlights();
     }
 });
@@ -360,7 +359,7 @@ document.getElementById('summary-btn').addEventListener('click', async () => {
                 </div>
             `;
             
-            summarySection.style.display = 'block';
+            summarySection.hidden = false;
             summarySection.classList.add('fade-in');
             summarySection.scrollIntoView({ behavior: 'smooth' });
             
@@ -465,7 +464,7 @@ function createFrequencyChart(data) {
     document.getElementById('frequency-chart-panel').hidden = false;
     document.getElementById('concepts-chart-panel').hidden = true;
     const chartsSection = document.getElementById('charts-section');
-    chartsSection.style.display = 'block';
+    chartsSection.hidden = false;
     chartsSection.classList.add('fade-in');
 }
 
@@ -518,8 +517,8 @@ function createConceptsChart(data) {
     document.getElementById('frequency-chart-panel').hidden = true;
     document.getElementById('concepts-chart-panel').hidden = false;
     const chartsSection = document.getElementById('charts-section');
-    if (chartsSection.style.display !== 'block') {
-        chartsSection.style.display = 'block';
+    if (chartsSection.hidden) {
+        chartsSection.hidden = false;
         chartsSection.classList.add('fade-in');
     }
 }
@@ -580,7 +579,7 @@ async function loadStatistics(text) {
             `;
             
             const statsSection = document.getElementById('stats-section');
-            statsSection.style.display = 'block';
+            statsSection.hidden = false;
             statsSection.classList.add('fade-in');
         }
         
@@ -615,7 +614,7 @@ async function loadWordCloud(text) {
             `).join('');
             
             const wordcloudSection = document.getElementById('wordcloud-section');
-            wordcloudSection.style.display = 'block';
+            wordcloudSection.hidden = false;
             wordcloudSection.classList.add('fade-in');
         }
         
@@ -663,12 +662,10 @@ document.getElementById('history-search').addEventListener('keypress', (e) => {
 
 function toggleHistorySection() {
     const historySection = document.getElementById('history-section');
-    if (historySection.style.display === 'none') {
-        historySection.style.display = 'block';
+    historySection.hidden = !historySection.hidden;
+    if (!historySection.hidden) {
         historySection.classList.add('fade-in');
         historySection.scrollIntoView({ behavior: 'smooth' });
-    } else {
-        historySection.style.display = 'none';
     }
 }
 
@@ -786,19 +783,12 @@ function displayAnalysisModal(analysis) {
     // Création d'une modal basique (vous pouvez améliorer avec Bootstrap modal)
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
-    modal.style.cssText = `
-        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.8); z-index: 1000;
-        display: flex; align-items: center; justify-content: center;
-        padding: 20px;
-    `;
-    
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.tabIndex = -1;
+
     const content = document.createElement('div');
-    content.className = 'modal-content';
-    content.style.cssText = `
-        background: white; border-radius: 10px; padding: 20px;
-        max-width: 80%; max-height: 80%; overflow-y: auto;
-    `;
+    content.className = 'modal-content analysis-modal';
     
     const date = new Date(analysis.created_at).toLocaleString('fr-FR');
     
@@ -835,7 +825,7 @@ function displayAnalysisModal(analysis) {
         
         <div class="mt-3">
             <h6>Extrait du texte</h6>
-            <div class="border p-3 bg-light" style="max-height: 200px; overflow-y: auto;">
+            <div class="analysis-modal-excerpt border p-3 bg-light">
                 ${analysis.original_text.substring(0, 500)}${analysis.original_text.length > 500 ? '...' : ''}
             </div>
         </div>
@@ -849,7 +839,8 @@ function displayAnalysisModal(analysis) {
     
     modal.appendChild(content);
     document.body.appendChild(modal);
-    
+    modal.focus();
+
     // Fermer avec Escape
     modal.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') modal.remove();
@@ -918,7 +909,7 @@ function displaySentimentAnalysis(sentiment) {
         </div>
     `;
     
-    sentimentSection.style.display = 'block';
+    sentimentSection.hidden = false;
     sentimentSection.classList.add('fade-in');
 }
 
@@ -968,7 +959,7 @@ function displayReadabilityAnalysis(readability) {
         </div>
     `;
     
-    readabilitySection.style.display = 'block';
+    readabilitySection.hidden = false;
     readabilitySection.classList.add('fade-in');
 }
 
@@ -990,7 +981,7 @@ function displayEmotionsAnalysis(data) {
                 <div><span class="text-muted">Intensité émotionnelle</span><strong>${Number(data?.emotional_intensity || 0).toFixed(1)}%</strong></div>
             </div>
         `;
-        emotionsSection.style.display = 'block';
+        emotionsSection.hidden = false;
         return;
     }
 
@@ -1015,7 +1006,7 @@ function displayEmotionsAnalysis(data) {
         </div>
     `;
 
-    emotionsSection.style.display = 'block';
+    emotionsSection.hidden = false;
     emotionsSection.classList.add('fade-in');
 }
 
