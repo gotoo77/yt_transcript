@@ -12,19 +12,19 @@ from yt_transcript.transcript_analyzer import (
 
 
 def test_extract_words_keeps_meaningful_apostrophe_contraction():
-    words = extract_words("Aujourd'hui robot science")
-    assert "aujourd'hui" in words
+    words = extract_words("rock'n'roll robot technologie")
+    assert "rock'n'roll" in words
 
 
 def test_concept_analysis_counts_repeated_matches():
-    words = ["science", "science", "recherche", "robot"]
+    words = ["technologie", "logiciel", "logiciel", "robot"]
     concepts = dict(analyze_concepts(words))
 
     assert concepts
     science_like = [
         data
         for data in concepts.values()
-        if "science" in data["words"] or "recherche" in data["words"]
+        if "technologie" in data["words"] or "logiciel" in data["words"]
     ]
     assert science_like
     assert any(data["score"] >= 2 for data in science_like)
@@ -47,7 +47,7 @@ def test_summary_applies_length_and_position_bonuses():
 
 
 def test_analyze_text_concepts_mode_returns_concepts():
-    result, count = analyze_text("science recherche science robot", mode="concepts")
+    result, count = analyze_text("technologie logiciel logiciel robot", mode="concepts")
     assert count == 4
     assert result
 
