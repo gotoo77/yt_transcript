@@ -135,3 +135,14 @@ def test_search_history_serializes_optional_date_and_short_preview(client, monke
     item = response.json["results"][0]
     assert item["created_at"] is None
     assert item["text_preview"] == "short preview"
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "/history?limit=1",
+        "/api/v1/analyses/?offset=0",
+    ],
+)
+def test_valid_numeric_query_parameters_pass_validation(client, url):
+    assert client.get(url).status_code == 200
