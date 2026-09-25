@@ -123,8 +123,14 @@ textarea#transcript-textarea { min-height:280px; line-height:1.6; font-family:ui
 .export-btn-success { border-color:color-mix(in srgb,var(--ui-success) 65%,var(--ui-line)); }
 .export-btn-danger { border-color:color-mix(in srgb,var(--ui-danger) 65%,var(--ui-line)); }
 .export-btn:disabled { opacity:.65; cursor:wait; }
-.kpi-card,.chart-container,.insight-card {
+.kpi-card,.insight-card {
  height:100%;
+ padding:1.2rem;
+ margin:0;
+}
+.chart-container {
+ height:auto;
+ min-height:260px;
  padding:1.2rem;
  margin:0;
 }
