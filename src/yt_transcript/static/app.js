@@ -1,3 +1,14 @@
+function showUiMessage(message, tone = 'info') {
+    const status = document.getElementById('ui-status');
+    status.className = `ui-status ui-status-${tone}`;
+    status.textContent = message;
+    status.hidden = false;
+    window.clearTimeout(showUiMessage.timeoutId);
+    showUiMessage.timeoutId = window.setTimeout(() => {
+        status.hidden = true;
+    }, 5000);
+}
+
 document.getElementById('transcribe-btn').addEventListener('click', async () => {
     const videoId = document.getElementById('video-id').value.trim();
     const selectedLanguage = document.getElementById('language-select').value;
@@ -102,7 +113,7 @@ document.getElementById('analyze-btn').addEventListener('click', async () => {
     console.log('Texte:', text.length, 'caractères, Mode:', mode, 'Max mots:', maxWords);
 
     if (!text) {
-        alert('Veuillez d\'abord transcrire une vidéo ou saisir du texte.');
+        showUiMessage('Veuillez d’abord transcrire une vidéo ou saisir du texte.', 'warning');
         return;
     }
 
@@ -316,7 +327,7 @@ document.getElementById('summary-btn').addEventListener('click', async () => {
     const text = document.getElementById('transcript-textarea').value.trim();
     
     if (!text) {
-        alert('Veuillez d\'abord transcrire une vidéo ou saisir du texte.');
+        showUiMessage('Veuillez d’abord transcrire une vidéo ou saisir du texte.', 'warning');
         return;
     }
     
@@ -364,12 +375,12 @@ document.getElementById('summary-btn').addEventListener('click', async () => {
             summarySection.scrollIntoView({ behavior: 'smooth' });
             
         } else {
-            alert('Erreur: ' + data.error);
+            showUiMessage('Erreur : ' + data.error, 'danger');
         }
         
     } catch (err) {
         console.error('Erreur résumé:', err);
-        alert('Erreur de connexion au serveur');
+        showUiMessage('Erreur de connexion au serveur.', 'danger');
     } finally {
         summaryBtn.disabled = false;
         summaryBtn.textContent = originalText;
@@ -662,7 +673,9 @@ document.getElementById('history-search').addEventListener('keypress', (e) => {
 
 function toggleHistorySection() {
     const historySection = document.getElementById('history-section');
+    const historyButton = document.getElementById('history-btn');
     historySection.hidden = !historySection.hidden;
+    historyButton.setAttribute('aria-expanded', String(!historySection.hidden));
     if (!historySection.hidden) {
         historySection.classList.add('fade-in');
         historySection.scrollIntoView({ behavior: 'smooth' });
@@ -771,16 +784,16 @@ async function loadAnalysisDetails(analysisId) {
         if (data.success) {
             displayAnalysisModal(data.analysis);
         } else {
-            alert('Erreur: ' + data.error);
+            showUiMessage('Erreur : ' + data.error, 'danger');
         }
     } catch (err) {
         console.error('Erreur chargement détails:', err);
-        alert('Erreur de connexion');
+        showUiMessage('Erreur de connexion.', 'danger');
     }
 }
 
 function displayAnalysisModal(analysis) {
-    // Création d'une modal basique (vous pouvez améliorer avec Bootstrap modal)
+    const previousFocus = document.activeElement;
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.setAttribute('role', 'dialog');
@@ -794,9 +807,9 @@ function displayAnalysisModal(analysis) {
     
     content.innerHTML = `
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h4><i class="fas fa-chart-line"></i> Analyse du ${date}</h4>
-            <button class="btn btn-outline-secondary" onclick="this.closest('.modal-overlay').remove()">
-                <i class="fas fa-times"></i>
+            <h4 id="analysis-modal-title"><i class="fas fa-chart-line" aria-hidden="true"></i> Analyse du ${date}</h4>
+            <button class="btn btn-outline-secondary modal-close" type="button" aria-label="Fermer la fenêtre">
+                <i class="fas fa-times" aria-hidden="true"></i>
             </button>
         </div>
         
@@ -831,25 +844,60 @@ function displayAnalysisModal(analysis) {
         </div>
         
         <div class="mt-3 text-end">
-            <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">
-                Fermer
-            </button>
+            <button class="btn btn-secondary modal-close" type="button">Fermer</button>
         </div>
     `;
     
+    modal.setAttribute('aria-labelledby', 'analysis-modal-title');
+
+    const closeModal = () => {
+        modal.remove();
+        if (previousFocus instanceof HTMLElement) {
+            previousFocus.focus();
+        }
+    };
+
     modal.appendChild(content);
     document.body.appendChild(modal);
-    modal.focus();
 
-    // Fermer avec Escape
+    const focusable = () => [...modal.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    )].filter(element => !element.disabled && !element.hidden);
+
+    modal.querySelectorAll('.modal-close').forEach(button => {
+        button.addEventListener('click', closeModal);
+    });
+
     modal.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') modal.remove();
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            closeModal();
+            return;
+        }
+        if (e.key === 'Tab') {
+            const elements = focusable();
+            if (elements.length === 0) {
+                e.preventDefault();
+                return;
+            }
+            const first = elements[0];
+            const last = elements[elements.length - 1];
+            if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+            }
+        }
     });
-    
-    // Fermer en cliquant sur le fond
+
     modal.addEventListener('click', (e) => {
-        if (e.target === modal) modal.remove();
+        if (e.target === modal) closeModal();
     });
+
+    const initialFocus = focusable()[0];
+    (initialFocus || modal).focus();
 }
 
 function displayAdvancedAnalysis(analysis) {
