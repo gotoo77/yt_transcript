@@ -26,6 +26,7 @@
       <p>Espace d’analyse des vidéos</p>
       <button class="theme-toggle" type="button" id="theme-toggle" aria-label="Activer le thème clair" aria-pressed="false">☀ Thème clair</button>
     </header>
+    <div id="ui-status" class="ui-status" role="status" aria-live="polite" hidden></div>
     <div class="container">
         <h1 class="mb-4 text-center">
             <i class="fab fa-youtube text-danger"></i> 
@@ -43,7 +44,7 @@
                 <i class="fas fa-link"></i> ID ou URL de la vidéo
             </label>
             <div class="input-group">
-                <span class="input-group-text"><i class="fab fa-youtube"></i></span>
+                <span class="input-group-text" aria-hidden="true"><i class="fab fa-youtube"></i></span>
                 <input id="video-id" type="text" class="form-control" placeholder="https://www.youtube.com/watch?v=... ou ID de la vidéo">
                 <button id="transcribe-btn" class="btn btn-primary">
                     <i class="fas fa-download"></i> Transcrire
@@ -100,7 +101,7 @@ Vous pouvez aussi coller manuellement du texte à analyser."></textarea>
                     <div class="input-group input-group-sm">
                         <span class="input-group-text"><i class="fas fa-search"></i></span>
                         <input type="text" id="search-input" class="form-control" placeholder="Rechercher dans la transcription...">
-                        <button class="btn btn-outline-secondary" type="button" id="clear-search">
+                        <button class="btn btn-outline-secondary" type="button" id="clear-search" aria-label="Effacer la recherche">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
@@ -123,7 +124,7 @@ Vous pouvez aussi coller manuellement du texte à analyser."></textarea>
                 <button id="summary-btn" class="btn btn-primary" disabled>
                     <i class="fas fa-compress-alt"></i> Résumé
                 </button>
-                <button id="history-btn" class="btn btn-outline-secondary">
+                <button id="history-btn" class="btn btn-outline-secondary" aria-controls="history-section" aria-expanded="false">
                     <i class="fas fa-history"></i> Historique
                 </button>
                 <a href="/dashboard" class="btn btn-outline-secondary">
@@ -269,7 +270,7 @@ Vous pouvez aussi coller manuellement du texte à analyser."></textarea>
                 <div class="card-header bg-secondary text-white">
                     <h5 class="mb-0">
                         <i class="fas fa-history"></i> Historique des Analyses
-                        <button class="btn btn-sm btn-light float-end" id="refresh-history">
+                        <button class="btn btn-sm btn-light float-end" id="refresh-history" aria-label="Actualiser l'historique">
                             <i class="fas fa-sync-alt"></i>
                         </button>
                     </h5>
@@ -280,7 +281,7 @@ Vous pouvez aussi coller manuellement du texte à analyser."></textarea>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="fas fa-search"></i></span>
                                 <input type="text" id="history-search" class="form-control" placeholder="Rechercher dans l'historique...">
-                                <button class="btn btn-outline-primary" id="search-history-btn">Rechercher</button>
+                                <button class="btn btn-outline-primary" id="search-history-btn" type="button">Rechercher</button>
                             </div>
                         </div>
                         <div class="col-md-4">
