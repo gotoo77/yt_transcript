@@ -1,6 +1,5 @@
 """Focused branch coverage for web routes and transcript fallbacks."""
 
-from datetime import datetime
 from types import SimpleNamespace
 
 import pytest
