@@ -161,81 +161,61 @@ def transcript_remove(video_id: str) -> ResponseReturnValue:
 
 @bp.route("/analyze", methods=["POST"])
 def analyze() -> ResponseReturnValue:
-    """Analyse le texte selon le mode spécifié"""
-    try:
-        data = request.get_json()
-        if not data:
-            return jsonify(success=False, error="Données manquantes")
+    """Analyse le texte selon le mode spécifié."""
+    # validate_request() guarantees a JSON object with a non-empty text field.
+    data = request.get_json()
+    text = data["text"].strip()
+    mode = data.get("mode", "style")
+    max_words = data.get("max_words", 30)
 
-        text = data.get("text", "").strip()
-        mode = data.get("mode", "style")
-        max_words = data.get("max_words", 30)  # Nouveau paramètre
-
-        if not text:
-            return jsonify(success=False, error="Texte à analyser manquant")
-
-        if len(text) < 10:
-            return jsonify(
-                success=False, error="Le texte est trop court pour une analyse significative"
-            )
-
-        # Validation du paramètre max_words
-        max_words = max(1, min(200, int(max_words)))  # Entre 1 et 200
-
-        logger.info(
-            f"Analyse en mode '{mode}' (max_words={max_words}) d'un texte de {len(text)} caractères"
+    if len(text) < 10:
+        return jsonify(
+            success=False, error="Le texte est trop court pour une analyse significative"
         )
 
-        try:
-            # Analyse principale
-            result, word_count = analyze_text(text, mode, max_words)
+    logger.info(
+        f"Analyse en mode '{mode}' (max_words={max_words}) d'un texte de {len(text)} caractères"
+    )
 
-            # Statistiques détaillées
-            words = extract_words(text)
-            statistics = get_text_statistics(words, text)
+    try:
+        result, word_count = analyze_text(text, mode, max_words)
+        words = extract_words(text)
+        statistics = get_text_statistics(words, text)
+        comprehensive_analysis = get_comprehensive_analysis(text)
 
-            # Analyse de sentiment et lisibilité (Phase 3)
-            comprehensive_analysis = get_comprehensive_analysis(text)
+        video_id = session.get("video_id")
+        video_url = f"https://www.youtube.com/watch?v={video_id}" if video_id else None
 
-            # Sauvegarde en base de données
-            video_id = session.get("video_id")
-            video_url = f"https://www.youtube.com/watch?v={video_id}" if video_id else None
+        analysis_id = save_analysis(
+            original_text=text,
+            analysis_mode=mode,
+            results=result,
+            statistics=statistics,
+            video_id=video_id,
+            video_url=video_url,
+            sentiment_data=comprehensive_analysis.get("sentiment"),
+            readability_metrics=comprehensive_analysis.get("readability"),
+        )
 
-            analysis_id = save_analysis(
-                original_text=text,
-                analysis_mode=mode,
-                results=result,
-                statistics=statistics,
-                video_id=video_id,
-                video_url=video_url,
-                sentiment_data=comprehensive_analysis.get("sentiment"),
-                readability_metrics=comprehensive_analysis.get("readability"),
-            )
+        if analysis_id is None:
+            return jsonify(success=False, error="Impossible de sauvegarder l'analyse"), 500
 
-            if analysis_id is None:
-                return jsonify(success=False, error="Impossible de sauvegarder l'analyse"), 500
+        response_data = {
+            "success": True,
+            "result": result,
+            "word_count": word_count,
+            "mode": mode,
+            "text_length": len(text),
+            "analysis_id": analysis_id,
+        }
 
-            response_data = {
-                "success": True,
-                "result": result,
-                "word_count": word_count,
-                "mode": mode,
-                "text_length": len(text),
-                "analysis_id": analysis_id,
-            }
+        if comprehensive_analysis:
+            response_data["advanced_analysis"] = comprehensive_analysis
 
-            # Ajouter l'analyse complémentaire si disponible
-            if comprehensive_analysis:
-                response_data["advanced_analysis"] = comprehensive_analysis
-
-            return jsonify(response_data)
-
-        except Exception as e:
-            logger.error(f"Erreur lors de l'analyse: {e}")
-            return jsonify(success=False, error="Erreur interne du serveur"), 500
+        return jsonify(response_data)
 
     except Exception as e:
-        logger.error(f"Erreur inattendue dans analyze(): {e}")
+        logger.error(f"Erreur lors de l'analyse: {e}")
         return jsonify(success=False, error="Erreur interne du serveur"), 500
 
 
@@ -244,12 +224,7 @@ def get_statistics() -> ResponseReturnValue:
     """Récupère les statistiques détaillées d'un texte"""
     try:
         data = request.get_json()
-        if not data:
-            return jsonify(success=False, error="Données manquantes")
-
-        text = data.get("text", "").strip()
-        if not text:
-            return jsonify(success=False, error="Texte manquant")
+        text = data["text"].strip()
 
         words = extract_words(text)
         stats = get_text_statistics(words, text)
@@ -268,14 +243,8 @@ def get_summary() -> ResponseReturnValue:
     """Génère un résumé automatique du texte"""
     try:
         data = request.get_json()
-        if not data:
-            return jsonify(success=False, error="Données manquantes")
-
-        text = data.get("text", "").strip()
+        text = data["text"].strip()
         num_sentences = data.get("num_sentences", 3)
-
-        if not text:
-            return jsonify(success=False, error="Texte manquant")
 
         if len(text) < 100:
             return jsonify(success=False, error="Le texte est trop court pour générer un résumé")
@@ -302,14 +271,8 @@ def get_wordcloud() -> ResponseReturnValue:
     """Génère les données pour un nuage de mots"""
     try:
         data = request.get_json()
-        if not data:
-            return jsonify(success=False, error="Données manquantes")
-
-        text = data.get("text", "").strip()
+        text = data["text"].strip()
         max_words = data.get("max_words", 50)
-
-        if not text:
-            return jsonify(success=False, error="Texte manquant")
 
         words = extract_words(text)
         wordcloud_data = get_word_cloud_data(words, max_words)
