@@ -130,7 +130,7 @@ def test_stop_handles_process_disappearing(tmp_path, monkeypatch):
 def test_stop_timeout_becomes_runtime_error(tmp_path, monkeypatch):
     process = FakeProcess()
 
-    def timeout(_timeout=None):
+    def timeout(timeout=None):
         raise psutil.TimeoutExpired(process.pid)
 
     process.wait = timeout
