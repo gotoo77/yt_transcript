@@ -1,3 +1,6 @@
+const uiT = (key, params = {}) => window.YTI18n?.t(key, params) ?? key;
+const uiDateLocale = () => window.YTI18n?.getDateLocale?.() ?? 'fr-FR';
+
 function showUiMessage(message, tone = 'info') {
     const status = document.getElementById('ui-status');
     status.className = `ui-status ui-status-${tone}`;
@@ -16,7 +19,7 @@ document.getElementById('transcribe-btn').addEventListener('click', async () => 
     console.log("[Transcription] Langue sélectionnée :", selectedLanguage);
 
     if (!videoId) {
-        document.getElementById('status-msg').textContent = '⚠️ Veuillez saisir un ID ou URL de vidéo.';
+        document.getElementById('status-msg').textContent = uiT('status.videoRequired');
         return;
     }
 
@@ -24,10 +27,10 @@ document.getElementById('transcribe-btn').addEventListener('click', async () => 
     const transcribeBtn = document.getElementById('transcribe-btn');
     const originalText = transcribeBtn.textContent;
     transcribeBtn.disabled = true;
-    transcribeBtn.textContent = 'Traitement...';
+    transcribeBtn.textContent = uiT('status.processing');
     
     const languageText = selectedLanguage === 'auto' ? 'auto-détection' : selectedLanguage;
-    document.getElementById('status-msg').textContent = `⏳ Transcription en cours (${languageText})...`;
+    document.getElementById('status-msg').textContent = uiT('status.transcribing', {language: languageText});
     document.getElementById('analyze-btn').disabled = true;
 
     try {
@@ -53,15 +56,15 @@ document.getElementById('transcribe-btn').addEventListener('click', async () => 
             document.getElementById('download-btn').disabled = false;
             
             const charCount = data.transcript.length;
-            const message = data.message || 'Transcription réussie';
+            const message = data.message || uiT('status.transcribedDefault');
             
             // Afficher des informations détaillées sur la langue détectée
-            let statusMessage = `✅ ${message} (${charCount} caractères)`;
+            let statusMessage = uiT('status.transcribed', {message, count: charCount});
             
             if (data.detected_language && data.detected_language_name) {
                 console.log('🌍 Langue détectée:', data.detected_language_name);
                 if (data.requested_language !== 'auto' && data.detected_language !== data.requested_language) {
-                    statusMessage += ` 🔄 Fallback appliqué`;
+                    statusMessage += ` ${uiT('status.fallback')}`;
                 }
             }
             
@@ -74,7 +77,7 @@ document.getElementById('transcribe-btn').addEventListener('click', async () => 
         }
     } catch (err) {
         console.error("[Transcription] Erreur réseau :", err);
-        document.getElementById('status-msg').textContent = '❌ Erreur de connexion au serveur';
+        document.getElementById('status-msg').textContent = uiT('status.network');
     } finally {
         // Réactivation du bouton
         transcribeBtn.disabled = false;
@@ -113,7 +116,7 @@ document.getElementById('analyze-btn').addEventListener('click', async () => {
     console.log('Texte:', text.length, 'caractères, Mode:', mode, 'Max mots:', maxWords);
 
     if (!text) {
-        showUiMessage('Veuillez d’abord transcrire une vidéo ou saisir du texte.', 'warning');
+        showUiMessage(uiT('status.noText'), 'warning');
         return;
     }
 
@@ -121,7 +124,7 @@ document.getElementById('analyze-btn').addEventListener('click', async () => {
     const analyzeBtn = document.getElementById('analyze-btn');
     const originalText = analyzeBtn.textContent;
     analyzeBtn.disabled = true;
-    analyzeBtn.textContent = 'Analyse en cours...';
+    analyzeBtn.textContent = uiT('status.analyzing');
 
     console.log(`[Analyse] Début analyse (mode: ${mode}, max_words: ${maxWords})`);
     try {
@@ -148,8 +151,8 @@ document.getElementById('analyze-btn').addEventListener('click', async () => {
                 // Affichage pour l'analyse de style
                 const maxWordsDisplay = mode === 'style' ? maxWords : data.result.length;
                 resultDiv.innerHTML = `
-                    <h5><i class="fas fa-chart-bar"></i> Analyse stylistique</h5>
-                    <p><strong>Top ${maxWordsDisplay} des mots les plus fréquents</strong> (${data.result.length} résultats sur ${data.word_count} mots analysés)</p>
+                    <h5><i class="fas fa-chart-bar"></i> ${uiT('style.title')}</h5>
+                    <p><strong>${uiT('style.top', {max:maxWordsDisplay, results:data.result.length, words:data.word_count})}</strong></p>
                     <div class="row">
                         <div class="col-md-6">
                             <ul class="list-group list-group-flush">
@@ -181,8 +184,8 @@ document.getElementById('analyze-btn').addEventListener('click', async () => {
                 // Affichage pour l'analyse conceptuelle
                 if (data.result.length > 0) {
                         resultDiv.innerHTML = `
-                            <h5><i class="fas fa-brain"></i> Analyse conceptuelle</h5>
-                            <p><strong>${data.result.length} thèmes détectés</strong> dans le texte (${data.word_count} mots analysés)</p>
+                            <h5><i class="fas fa-brain"></i> ${uiT('concepts.title')}</h5>
+                            <p><strong>${uiT('concepts.detected', {count:data.result.length, words:data.word_count})}</strong></p>
                             <div class="concept-grid">
                                 ${data.result.map(([category, info]) => `
                                     <article class="concept-category">
@@ -192,8 +195,8 @@ document.getElementById('analyze-btn').addEventListener('click', async () => {
                                             </h6>
                                             <span class="badge bg-success">${info.percentage}%</span>
                                         </div>
-                                        <p class="concept-score"><strong>${info.score}</strong> mentions</p>
-                                        <div class="concept-keywords" aria-label="Mots-clés">
+                                        <p class="concept-score">${uiT('concepts.mentions', {count:info.score})}</p>
+                                        <div class="concept-keywords" aria-label="${uiT('concepts.keywords')}">
                                             ${[...new Set(info.words)].map(word => `<span class="badge bg-secondary">${word}</span>`).join('')}
                                         </div>
                                     </article>
@@ -205,10 +208,9 @@ document.getElementById('analyze-btn').addEventListener('click', async () => {
                         createConceptsChart(data.result);
                     } else {
                         resultDiv.innerHTML = `
-                            <h5><i class="fas fa-brain"></i> Analyse conceptuelle</h5>
+                            <h5><i class="fas fa-brain"></i> ${uiT('concepts.title')}</h5>
                             <div class="alert alert-info">
-                                <i class="fas fa-info-circle"></i> Aucun thème spécifique détecté dans ce texte.
-                                Les concepts recherchés: technologie, économie, social, santé, environnement.
+                                <i class="fas fa-info-circle"></i> ${uiT('concepts.none')}
                             </div>
                         `;
                     }
@@ -278,7 +280,7 @@ document.getElementById('search-input').addEventListener('input', function() {
     }
     
     if (query.length < 2) {
-        resultsDiv.textContent = 'Tapez au moins 2 caractères...';
+        resultsDiv.textContent = uiT('search.minChars');
         return;
     }
     
@@ -305,14 +307,14 @@ function searchInText(query, text) {
     const matches = text.match(regex);
     
     if (matches) {
-        resultsDiv.innerHTML = `<i class="fas fa-search"></i> ${matches.length} occurrence(s) trouvée(s)`;
+        resultsDiv.innerHTML = `<i class="fas fa-search" aria-hidden="true"></i> ${uiT('search.matches', {count:matches.length})}`;
         
         // Surlignage dans le textarea (simulation avec styles)
         const highlightedText = text.replace(regex, '<span class="highlight">$&</span>');
         // Note: Le textarea ne supporte pas le HTML, donc on utilise une approche alternative
         
     } else {
-        resultsDiv.innerHTML = `<i class="fas fa-search"></i> Aucun résultat pour "${query}"`;
+        resultsDiv.innerHTML = `<i class="fas fa-search" aria-hidden="true"></i> ${uiT('search.none', {query})}`;
     }
 }
 
@@ -327,14 +329,14 @@ document.getElementById('summary-btn').addEventListener('click', async () => {
     const text = document.getElementById('transcript-textarea').value.trim();
     
     if (!text) {
-        showUiMessage('Veuillez d’abord transcrire une vidéo ou saisir du texte.', 'warning');
+        showUiMessage(uiT('status.noText'), 'warning');
         return;
     }
     
     const summaryBtn = document.getElementById('summary-btn');
     const originalText = summaryBtn.textContent;
     summaryBtn.disabled = true;
-    summaryBtn.textContent = 'Génération...';
+    summaryBtn.textContent = uiT('status.summaryGenerating');
     
     try {
         const res = await fetch('/summary', {
@@ -351,20 +353,20 @@ document.getElementById('summary-btn').addEventListener('click', async () => {
             
             summaryContent.innerHTML = `
                 <div class="mb-3">
-                    <p class="mb-2"><strong>Résumé :</strong></p>
+                    <p class="mb-2"><strong>${uiT('summary.title')}</strong></p>
                     <p class="lead">${data.summary}</p>
                 </div>
                 <div class="row text-center">
                     <div class="col-4">
-                        <small class="text-muted">Texte original</small><br>
+                        <small class="text-muted">${uiT('summary.original')}</small><br>
                         <strong>${data.original_length}</strong> caractères
                     </div>
                     <div class="col-4">
-                        <small class="text-muted">Résumé</small><br>
+                        <small class="text-muted">${uiT('summary.summary')}</small><br>
                         <strong>${data.summary_length}</strong> caractères
                     </div>
                     <div class="col-4">
-                        <small class="text-muted">Compression</small><br>
+                        <small class="text-muted">${uiT('summary.compression')}</small><br>
                         <strong class="text-success">${data.compression_ratio}%</strong>
                     </div>
                 </div>
@@ -375,12 +377,12 @@ document.getElementById('summary-btn').addEventListener('click', async () => {
             summarySection.scrollIntoView({ behavior: 'smooth' });
             
         } else {
-            showUiMessage('Erreur : ' + data.error, 'danger');
+            showUiMessage(uiT('status.error', {message:data.error}), 'danger');
         }
         
     } catch (err) {
         console.error('Erreur résumé:', err);
-        showUiMessage('Erreur de connexion au serveur.', 'danger');
+        showUiMessage(uiT('status.connectionError'), 'danger');
     } finally {
         summaryBtn.disabled = false;
         summaryBtn.textContent = originalText;
@@ -468,6 +470,20 @@ function applyMainChartTheme() {
 
 window.addEventListener('yt-theme-change', applyMainChartTheme);
 
+window.addEventListener('yt-language-change', () => {
+    applyMainChartTheme();
+    if (frequencyChart) {
+        frequencyChart.data.datasets[0].label = uiT('chart.frequencyDataset');
+        frequencyChart.options.plugins.title.text = uiT('chart.frequency');
+        frequencyChart.update();
+    }
+    if (conceptsChart) {
+        conceptsChart.options.plugins.title.text = uiT('chart.concepts');
+        conceptsChart.update();
+    }
+});
+
+
 // Fonction pour créer le graphique de fréquence
 function createFrequencyChart(data) {
     const ctx = document.getElementById('frequency-chart').getContext('2d');
@@ -486,7 +502,7 @@ function createFrequencyChart(data) {
         data: {
             labels: labels,
             datasets: [{
-                label: 'Fréquence',
+                label: uiT('chart.frequencyDataset'),
                 data: counts,
                 backgroundColor: palette.accentSoft,
                 borderColor: palette.accent,
@@ -499,7 +515,7 @@ function createFrequencyChart(data) {
             plugins: {
                 title: {
                     display: true,
-                    text: 'Mots les plus fréquents',
+                    text: uiT('chart.frequency'),
                     color: palette.ink
                 },
                 legend: {
@@ -567,7 +583,7 @@ function createConceptsChart(data) {
             plugins: {
                 title: {
                     display: true,
-                    text: 'Répartition des concepts',
+                    text: uiT('chart.concepts'),
                     color: palette.ink
                 },
                 legend: {
@@ -610,37 +626,37 @@ async function loadStatistics(text) {
                 <div class="col-md-3 col-sm-6 mb-3">
                     <div class="stat-tile">
                         <h4 class="text-primary mb-1">${stats.total_words}</h4>
-                        <small class="text-muted">Mots total</small>
+                        <small class="text-muted">${uiT('stats.total')}</small>
                     </div>
                 </div>
                 <div class="col-md-3 col-sm-6 mb-3">
                     <div class="stat-tile">
                         <h4 class="text-success mb-1">${stats.unique_words}</h4>
-                        <small class="text-muted">Mots uniques</small>
+                        <small class="text-muted">${uiT('stats.unique')}</small>
                     </div>
                 </div>
                 <div class="col-md-3 col-sm-6 mb-3">
                     <div class="stat-tile">
                         <h4 class="text-info mb-1">${stats.reading_time_minutes}min</h4>
-                        <small class="text-muted">Temps lecture</small>
+                        <small class="text-muted">${uiT('stats.readingTime')}</small>
                     </div>
                 </div>
                 <div class="col-md-3 col-sm-6 mb-3">
                     <div class="stat-tile">
                         <h4 class="text-warning mb-1">${stats.complexity_score}</h4>
-                        <small class="text-muted">Complexité</small>
+                        <small class="text-muted">${uiT('stats.complexity')}</small>
                     </div>
                 </div>
                 <div class="col-12 mt-3">
                     <div class="row text-center">
                         <div class="col-md-4">
-                            <strong>Richesse vocabulaire:</strong> ${stats.vocabulary_richness}%
+                            <strong>${uiT('stats.richness')}:</strong> ${stats.vocabulary_richness}%
                         </div>
                         <div class="col-md-4">
-                            <strong>Longueur moyenne mot:</strong> ${stats.average_word_length} caract.
+                            <strong>${uiT('stats.averageWord')}:</strong> ${stats.average_word_length} caract.
                         </div>
                         <div class="col-md-4">
-                            <strong>Phrases:</strong> ${stats.sentences}
+                            <strong>${uiT('stats.sentences')}:</strong> ${stats.sentences}
                         </div>
                     </div>
                 </div>
@@ -792,7 +808,7 @@ function displayHistory(analyses, stats, title = 'Historique récent') {
     }
     
     const analysesHtml = analyses.map(analysis => {
-        const date = new Date(analysis.created_at).toLocaleString('fr-FR');
+        const date = new Date(analysis.created_at).toLocaleString(uiDateLocale());
         const sentimentBadge = analysis.sentiment_label ? 
             `<span class="badge bg-${
                 analysis.sentiment_label === 'positive' ? 'success' : 
@@ -841,7 +857,7 @@ async function loadAnalysisDetails(analysisId) {
         if (data.success) {
             displayAnalysisModal(data.analysis);
         } else {
-            showUiMessage('Erreur : ' + data.error, 'danger');
+            showUiMessage(uiT('status.error', {message:data.error}), 'danger');
         }
     } catch (err) {
         console.error('Erreur chargement détails:', err);
@@ -992,23 +1008,23 @@ function displaySentimentAnalysis(sentiment) {
                 <div class="p-3 border rounded">
                     <i class="fas fa-${sentimentIcon} fa-3x text-${sentimentColor} mb-2"></i>
                     <h5 class="text-${sentimentColor}">${sentiment.label.toUpperCase()}</h5>
-                    <small>Confiance: ${Math.round(sentiment.confidence * 100)}%</small>
+                    <small>${uiT('sentiment.confidence')}: ${Math.round(sentiment.confidence * 100)}%</small>
                 </div>
             </div>
             <div class="col-md-8">
                 <div class="mb-3">
-                    <label>Polarité: <strong>${sentiment.polarity}</strong></label>
+                    <label>${uiT('sentiment.polarity')}: <strong>${sentiment.polarity}</strong></label>
                     <div class="progress">
                         <div class="progress-bar bg-${sentimentColor}" style="width: ${Math.abs(sentiment.polarity) * 50 + 50}%"></div>
                     </div>
-                    <small class="text-muted">-1 (très négatif) à +1 (très positif)</small>
+                    <small class="text-muted">${uiT('sentiment.polarityHelp')}</small>
                 </div>
                 <div class="mb-3">
-                    <label>Subjectivité: <strong>${sentiment.subjectivity}</strong></label>
+                    <label>${uiT('sentiment.subjectivity')}: <strong>${sentiment.subjectivity}</strong></label>
                     <div class="progress">
                         <div class="progress-bar bg-info" style="width: ${sentiment.subjectivity * 100}%"></div>
                     </div>
-                    <small class="text-muted">0 (objectif) à 1 (subjectif)</small>
+                    <small class="text-muted">${uiT('sentiment.subjectivityHelp')}</small>
                 </div>
             </div>
         </div>
@@ -1031,9 +1047,9 @@ function displayReadabilityAnalysis(readability) {
             <div class="col-md-6">
                 <div class="card">
                     <div class="card-body text-center">
-                        <h5 class="card-title">Niveau de Lisibilité</h5>
+                        <h5 class="card-title">${uiT('readability.level')}</h5>
                         <h3 class="text-${easeColor}">${readability.ease_level}</h3>
-                        <p class="card-text">Score Flesch: <strong>${readability.flesch_ease}</strong></p>
+                        <p class="card-text">${uiT('readability.flesch')}: <strong>${readability.flesch_ease}</strong></p>
                         <div class="progress">
                             <div class="progress-bar bg-${easeColor}" style="width: ${Math.max(0, readability.flesch_ease)}%"></div>
                         </div>
@@ -1041,22 +1057,22 @@ function displayReadabilityAnalysis(readability) {
                 </div>
             </div>
             <div class="col-md-6">
-                <h6>Métriques détaillées</h6>
+                <h6>${uiT('readability.details')}</h6>
                 <ul class="list-group list-group-flush">
                     <li class="list-group-item d-flex justify-content-between">
-                        <span>Niveau scolaire Flesch-Kincaid</span>
+                        <span>${uiT('readability.grade')}</span>
                         <strong>${readability.flesch_kincaid}</strong>
                     </li>
                     <li class="list-group-item d-flex justify-content-between">
-                        <span>Mots par phrase (moyenne)</span>
+                        <span>${uiT('readability.wordsSentence')}</span>
                         <strong>${readability.avg_sentence_length}</strong>
                     </li>
                     <li class="list-group-item d-flex justify-content-between">
-                        <span>Syllabes par mot (moyenne)</span>
+                        <span>${uiT('readability.syllablesWord')}</span>
                         <strong>${readability.avg_syllables_per_word}</strong>
                     </li>
                     <li class="list-group-item d-flex justify-content-between">
-                        <span>Complexité lexicale</span>
+                        <span>${uiT('readability.lexical')}</span>
                         <strong>${readability.lexical_complexity}%</strong>
                     </li>
                 </ul>
@@ -1081,9 +1097,9 @@ function displayEmotionsAnalysis(data) {
     if (emotionList.length === 0) {
         emotionsContent.innerHTML = `
             <div class="emotion-summary">
-                <div><span class="text-muted">Émotion dominante</span><strong>Aucune</strong></div>
-                <div><span class="text-muted">Mots émotionnels</span><strong>${data?.total_emotion_words ?? 0}</strong></div>
-                <div><span class="text-muted">Intensité émotionnelle</span><strong>${Number(data?.emotional_intensity || 0).toFixed(1)}%</strong></div>
+                <div><span class="text-muted">${uiT('emotions.dominant')}</span><strong>${uiT('emotions.none')}</strong></div>
+                <div><span class="text-muted">${uiT('emotions.words')}</span><strong>${data?.total_emotion_words ?? 0}</strong></div>
+                <div><span class="text-muted">${uiT('emotions.intensity')}</span><strong>${Number(data?.emotional_intensity || 0).toFixed(1)}%</strong></div>
             </div>
         `;
         emotionsSection.hidden = false;
@@ -1092,7 +1108,7 @@ function displayEmotionsAnalysis(data) {
 
     emotionsContent.innerHTML = `
         <div class="emotion-summary">
-            <div><span class="text-muted">Émotion dominante</span><strong class="text-capitalize">${data.dominant_emotion || 'Aucune'}</strong></div>
+            <div><span class="text-muted">${uiT('emotions.dominant')}</span><strong class="text-capitalize">${data.dominant_emotion || uiT('emotions.none')}</strong></div>
             <div><span class="text-muted">Mots émotionnels</span><strong>${data.total_emotion_words ?? 0}</strong></div>
             <div><span class="text-muted">Intensité émotionnelle</span><strong>${Number(data.emotional_intensity || 0).toFixed(1)}%</strong></div>
         </div>
