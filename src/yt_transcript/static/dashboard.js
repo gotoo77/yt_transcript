@@ -66,6 +66,7 @@ class DashboardManager {
             
             if (result.success && result.data) {
                 await this.renderDashboard(result.data);
+                this.showLoading(false);
                 this.updateRefreshStatus('Données mises à jour');
             } else {
                 this.showError(result.error || 'Erreur lors du chargement');
@@ -75,7 +76,6 @@ class DashboardManager {
             this.showError('Erreur de connexion');
         } finally {
             this.isLoading = false;
-            this.showLoading(false);
         }
     }
 
@@ -597,15 +597,20 @@ class DashboardManager {
 
     showError(message) {
         console.error('Dashboard error:', message);
-        document.getElementById('loading-state').innerHTML = `
-            <div class="alert alert-danger">
-                <i class="fas fa-exclamation-triangle"></i>
-                <strong>Erreur:</strong> ${message}
-                <button class="btn btn-sm btn-outline-danger ms-2" onclick="dashboard.loadDashboard()">
-                    Réessayer
-                </button>
+        const loadingState = document.getElementById('loading-state');
+        document.getElementById('dashboard-content').hidden = true;
+        loadingState.hidden = false;
+        loadingState.innerHTML = `
+            <div class="ui-empty-state ui-empty-state-error" role="alert">
+                <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+                <div>
+                    <strong>Impossible de charger le tableau de bord</strong>
+                    <p>${message}</p>
+                </div>
+                <button class="btn btn-outline-danger" type="button" id="dashboard-retry">Réessayer</button>
             </div>
         `;
+        document.getElementById('dashboard-retry').addEventListener('click', () => this.loadDashboard());
     }
 
     updateRefreshStatus(message) {
