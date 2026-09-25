@@ -9,7 +9,8 @@ class DashboardManager {
         this.charts = {};
         this.refreshInterval = null;
         this.isLoading = false;
-        
+        this.lastData = null;
+
         this.initializeEventListeners();
         this.loadDashboard();
         this.startAutoRefresh();
@@ -27,6 +28,12 @@ class DashboardManager {
             btn.addEventListener('click', () => {
                 this.exportReport(btn.dataset.exportFormat, btn);
             });
+        });
+
+        window.addEventListener('yt-theme-change', () => {
+            if (this.lastData) {
+                this.renderCharts(this.lastData);
+            }
         });
 
         // Auto-refresh toggle (could be added)
@@ -81,6 +88,7 @@ class DashboardManager {
 
     async renderDashboard(data) {
         console.log('Dashboard data:', data);
+        this.lastData = data;
         
         // Render KPIs
         this.renderKPIs(data.kpis);
@@ -153,12 +161,36 @@ class DashboardManager {
         }
     }
 
+    getChartPalette() {
+        const styles = getComputedStyle(document.documentElement);
+        const read = (name) => styles.getPropertyValue(name).trim();
+        return {
+            ink: read('--ui-ink'),
+            muted: read('--ui-muted'),
+            surface: read('--ui-surface'),
+            grid: read('--ui-chart-grid'),
+            accent: read('--ui-accent'),
+            accentSoft: read('--ui-accent-soft'),
+            success: read('--ui-success'),
+            danger: read('--ui-danger'),
+            warning: read('--ui-warning'),
+            series: [
+                read('--ui-chart-1'),
+                read('--ui-chart-2'),
+                read('--ui-chart-3'),
+                read('--ui-chart-4'),
+                read('--ui-chart-5')
+            ]
+        };
+    }
+
     async createAnalysesChart(dailyData) {
         const ctx = document.getElementById('analysesChart').getContext('2d');
         
         const labels = dailyData.map(d => new Date(d.date).toLocaleDateString('fr-FR'));
         const counts = dailyData.map(d => d.count);
-        
+        const palette = this.getChartPalette();
+
         return new Chart(ctx, {
             type: 'line',
             data: {
@@ -166,13 +198,13 @@ class DashboardManager {
                 datasets: [{
                     label: 'Analyses par jour',
                     data: counts,
-                    borderColor: '#667eea',
-                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    borderColor: palette.accent,
+                    backgroundColor: palette.accentSoft,
                     borderWidth: 3,
                     fill: true,
                     tension: 0.4,
-                    pointBackgroundColor: '#667eea',
-                    pointBorderColor: '#fff',
+                    pointBackgroundColor: palette.accent,
+                    pointBorderColor: palette.surface,
                     pointBorderWidth: 2,
                     pointRadius: 6
                 }]
@@ -189,12 +221,20 @@ class DashboardManager {
                     y: {
                         beginAtZero: true,
                         ticks: {
-                            stepSize: 1
+                            stepSize: 1,
+                            color: palette.muted
+                        },
+                        grid: {
+                            color: palette.grid
                         }
                     },
                     x: {
                         ticks: {
-                            maxTicksLimit: 7
+                            maxTicksLimit: 7,
+                            color: palette.muted
+                        },
+                        grid: {
+                            color: palette.grid
                         }
                     }
                 },
@@ -212,7 +252,7 @@ class DashboardManager {
         
         const labels = Object.keys(modeData);
         const data = Object.values(modeData);
-        const colors = ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe'];
+        const palette = this.getChartPalette();
         
         return new Chart(ctx, {
             type: 'doughnut',
@@ -220,7 +260,7 @@ class DashboardManager {
                 labels: labels.map(l => l.charAt(0).toUpperCase() + l.slice(1)),
                 datasets: [{
                     data: data,
-                    backgroundColor: colors.slice(0, labels.length),
+                    backgroundColor: labels.map((_, index) => palette.series[index % palette.series.length]),
                     borderWidth: 0,
                     hoverOffset: 4
                 }]
@@ -233,7 +273,8 @@ class DashboardManager {
                         position: 'bottom',
                         labels: {
                             padding: 20,
-                            usePointStyle: true
+                            usePointStyle: true,
+                            color: palette.muted
                         }
                     }
                 }
@@ -246,13 +287,14 @@ class DashboardManager {
         
         const labels = Object.keys(sentimentData);
         const data = Object.values(sentimentData);
+        const palette = this.getChartPalette();
         const colors = {
-            'positif': '#28a745',
-            'neutre': '#ffc107', 
-            'négatif': '#dc3545'
+            'positif': palette.success,
+            'neutre': palette.warning,
+            'négatif': palette.danger
         };
-        
-        const backgroundColors = labels.map(label => colors[label] || '#6c757d');
+
+        const backgroundColors = labels.map(label => colors[label] || palette.muted);
         
         return new Chart(ctx, {
             type: 'bar',
@@ -277,7 +319,11 @@ class DashboardManager {
                     y: {
                         beginAtZero: true,
                         ticks: {
-                            stepSize: 1
+                            stepSize: 1,
+                            color: palette.muted
+                        },
+                        grid: {
+                            color: palette.grid
                         }
                     }
                 }
@@ -290,27 +336,16 @@ class DashboardManager {
         
         const labels = Object.keys(complexityData);
         const data = Object.values(complexityData);
-        
+        const palette = this.getChartPalette();
+
         return new Chart(ctx, {
             type: 'polarArea',
             data: {
                 labels: labels,
                 datasets: [{
                     data: data,
-                    backgroundColor: [
-                        'rgba(52, 152, 219, 0.6)',
-                        'rgba(46, 204, 113, 0.6)', 
-                        'rgba(241, 196, 15, 0.6)',
-                        'rgba(230, 126, 34, 0.6)',
-                        'rgba(231, 76, 60, 0.6)'
-                    ],
-                    borderColor: [
-                        'rgba(52, 152, 219, 1)',
-                        'rgba(46, 204, 113, 1)',
-                        'rgba(241, 196, 15, 1)', 
-                        'rgba(230, 126, 34, 1)',
-                        'rgba(231, 76, 60, 1)'
-                    ],
+                    backgroundColor: palette.series,
+                    borderColor: palette.surface,
                     borderWidth: 2
                 }]
             },
@@ -321,7 +356,8 @@ class DashboardManager {
                     legend: {
                         position: 'bottom',
                         labels: {
-                            fontSize: 10
+                            fontSize: 10,
+                            color: palette.muted
                         }
                     }
                 }
@@ -336,7 +372,8 @@ class DashboardManager {
         const weekdaysFr = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
         
         const data = weekdays.map(day => weekdayData[day] || 0);
-        
+        const palette = this.getChartPalette();
+
         return new Chart(ctx, {
             type: 'radar',
             data: {
@@ -344,11 +381,11 @@ class DashboardManager {
                 datasets: [{
                     label: 'Activité',
                     data: data,
-                    borderColor: '#667eea',
-                    backgroundColor: 'rgba(102, 126, 234, 0.2)',
+                    borderColor: palette.accent,
+                    backgroundColor: palette.accentSoft,
                     borderWidth: 2,
-                    pointBackgroundColor: '#667eea',
-                    pointBorderColor: '#fff',
+                    pointBackgroundColor: palette.accent,
+                    pointBorderColor: palette.surface,
                     pointBorderWidth: 2
                 }]
             },
@@ -364,7 +401,18 @@ class DashboardManager {
                     r: {
                         beginAtZero: true,
                         ticks: {
-                            stepSize: 1
+                            stepSize: 1,
+                            color: palette.muted,
+                            backdropColor: 'transparent'
+                        },
+                        grid: {
+                            color: palette.grid
+                        },
+                        angleLines: {
+                            color: palette.grid
+                        },
+                        pointLabels: {
+                            color: palette.muted
                         }
                     }
                 }
@@ -377,15 +425,16 @@ class DashboardManager {
         
         const labels = Object.keys(wordRangesData);
         const data = Object.values(wordRangesData);
-        
+        const palette = this.getChartPalette();
+
         return new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: labels,
                 datasets: [{
                     data: data,
-                    backgroundColor: 'rgba(102, 126, 234, 0.6)',
-                    borderColor: '#667eea',
+                    backgroundColor: palette.accentSoft,
+                    borderColor: palette.accent,
                     borderWidth: 1,
                     borderRadius: 4
                 }]
@@ -402,12 +451,20 @@ class DashboardManager {
                     y: {
                         beginAtZero: true,
                         ticks: {
-                            stepSize: 1
+                            stepSize: 1,
+                            color: palette.muted
+                        },
+                        grid: {
+                            color: palette.grid
                         }
                     },
                     x: {
                         ticks: {
-                            fontSize: 10
+                            fontSize: 10,
+                            color: palette.muted
+                        },
+                        grid: {
+                            color: palette.grid
                         }
                     }
                 }
@@ -444,7 +501,7 @@ class DashboardManager {
                     </div>
                     <div class="metric-row">
                         <span>Sentiment moyen</span>
-                        <strong style="color: ${this.getSentimentColor(metrics.avg_sentiment)}">
+                        <strong class="${this.getSentimentClass(metrics.avg_sentiment)}">
                             ${(metrics.avg_sentiment || 0).toFixed(3)}
                         </strong>
                     </div>
@@ -558,10 +615,10 @@ class DashboardManager {
         return num.toLocaleString('fr-FR');
     }
 
-    getSentimentColor(score) {
-        if (score > 0.1) return '#28a745';
-        if (score < -0.1) return '#dc3545';
-        return '#ffc107';
+    getSentimentClass(score) {
+        if (score > 0.1) return 'sentiment-positive';
+        if (score < -0.1) return 'sentiment-negative';
+        return 'sentiment-neutral';
     }
 
     getPreferredMode(modes) {
