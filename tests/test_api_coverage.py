@@ -96,3 +96,11 @@ def test_dashboard_stats_exception_becomes_500(client, monkeypatch):
     response = client.get("/api/v1/dashboard/stats")
     assert response.status_code == 500
     assert "simulated stats failure" not in response.get_data(as_text=True)
+
+
+def test_dashboard_stats_reraises_http_exception(client, monkeypatch):
+    def conflict(*args, **kwargs):
+        abort(409, "simulated stats conflict")
+
+    monkeypatch.setattr("yt_transcript.api.get_recent_analyses", conflict)
+    assert client.get("/api/v1/dashboard/stats").status_code == 409
